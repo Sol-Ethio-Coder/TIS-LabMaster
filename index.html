@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>TIS LabMaster </title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' text-anchor='middle' dy='.35em' font-size='80' fill='%234285f4'>📚</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' text-anchor='middle' dy='.35em' font-size='80' fill='%234285f4'>📚</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="animated-bg">
+    <div class="aurora"></div>
+    <div class="stars"></div>
+</div>
+<div class="app-wrapper">
+    <!-- LOGIN PANEL -->
+    <div id="loginPanel" class="login-overlay">
+        <div class="login-card">
+            <i class="fas fa-chalkboard-user" style="font-size: 50px; color: #a5f3fc;"></i>
+            <h2>TIS LabMaster Hub</h2>
+            <p style="color:#cbd5e6;">Complete Academic Management Hub</p>
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="loginUsername" placeholder="Username" autocomplete="off" value="admin">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="loginPassword" placeholder="Password" value="admin123">
+            </div>
+            <button class="login-btn" id="doLoginBtn">
+                <span>✨ Enter Portal</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+            <div id="loginError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- MAIN APPLICATION -->
+    <div id="mainApp" class="main-ui">
+        <!-- Header -->
+        <div class="glass-header">
+            <div class="brand">
+                <div class="logo-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div>
+                    <h1>TIS LabMaster Hub</h1>
+                    <small>✨ Auto-saves to Supabase cloud • Never lose data</small>
+                </div>
+            </div>
+            <div class="header-right">
+                <div id="liveDateTime" class="live-datetime"><i class="far fa-calendar-alt"></i> Loading...</div>
+                <div id="cloudStatus" class="live-datetime cloud-status"><i class="fas fa-cloud-upload-alt"></i> Cloud: Offline</div>
+                <div id="onlineBadge" class="icon-btn"><i class="fas fa-wifi"></i> Online</div>
+                <button id="themeToggle" class="icon-btn"><i class="fas fa-moon"></i></button>
+                <button id="logoutBtn" class="icon-btn"><i class="fas fa-sign-out-alt"></i> Exit</button>
+            </div>
+        </div>
+
+        <!-- Cloud Backup Bar -->
+        <div class="cloud-backup-bar">
+            <div class="pulse-dot"></div>
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span id="cloudStatusMsg">⚠️ Cloud not configured • Click "Configure Cloud" to enable auto-save</span>
+            <div class="cloud-buttons">
+                <button id="configureCloudBtn" class="cloud-btn"><i class="fas fa-cloud-upload-alt"></i> Configure Cloud</button>
+                <button id="syncToCloudBtn" class="cloud-btn sync-btn"><i class="fas fa-sync-alt"></i> Sync to Cloud</button>
+            </div>
+        </div>
+
+        <!-- Selection Area -->
+        <div class="selection-area">
+            <div class="selector-group"><label><i class="fas fa-calendar-alt"></i> Term:</label><select id="termSelector" class="term-dropdown"><option value="term1">📘 First Term</option><option value="term2" selected>📙 Second Term</option><option value="term3">📗 Third Term</option></select></div>
+            <div class="selector-group"><label><i class="fas fa-school"></i> Class:</label><select id="classSelector" class="grade-dropdown"></select></div>
+            <div class="selector-group"><label><i class="fas fa-search"></i> Search:</label><input type="text" id="searchInput" placeholder="Search student..." class="search-input"></div>
+            <div id="classTimestamp" class="live-datetime"><i class="far fa-clock"></i> Ready</div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="marks"><i class="fas fa-star"></i> Marklist</button>
+                <button class="tab-btn" data-tab="attendance"><i class="fas fa-user-check"></i> Attendance</button>
+                <button class="tab-btn" data-tab="analytics"><i class="fas fa-chart-line"></i> Analytics</button>
+                <button class="tab-btn" data-tab="reports"><i class="fas fa-print"></i> Reports</button>
+                <button class="tab-btn" data-tab="admin"><i class="fas fa-crown"></i> Admin</button>
+            </div>
+        </div>
+
+        <!-- MARKLIST TAB -->
+        <div id="marksTab" class="tab-content active">
+            <div class="glass-card">
+                <div class="marklist-header">
+                    <div class="main-title" id="termTitle">📋 This Is Temporary Mark List For Second Term 2026 GC</div>
+                    <div class="subtitle" id="gradeNameDisplay">Grade [Loading]</div>
+                    <div class="weight-row" id="weightsContainer"></div>
+                    <div class="formula-note"><i class="fas fa-chart-line"></i> Final Total = (Coursework Sum × 0.7) + (Final Exam × 0.3) | Click column headers to sort</div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="marksTable">
+                        <thead id="marksTableHead"></thead>
+                        <tbody id="marksTbody"></tbody>
+                    </table>
+                </div>
+                <div class="button-group">
+                    <button id="addStudentBtn" class="fab-add secondary"><i class="fas fa-user-plus"></i> Add Student</button>
+                    <button id="refreshMarksBtn" class="fab-add"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ATTENDANCE TAB -->
+        <div id="attendanceTab" class="tab-content">
+            <div class="glass-card">
+                <div class="attendance-header">
+                    <h3><i class="fas fa-calendar-check"></i> 📋 Lab Attendance Tracker</h3>
+                    <div class="attendance-stats" id="attendanceStats">
+                        <div class="stat-chip"><i class="fas fa-users"></i> Total: <span id="totalStudents">0</span></div>
+                        <div class="stat-chip present-chip"><i class="fas fa-check-circle"></i> Present: <span id="presentCount">0</span></div>
+                        <div class="stat-chip absent-chip"><i class="fas fa-times-circle"></i> Absent: <span id="absentCount">0</span></div>
+                        <div class="stat-chip"><i class="fas fa-chart-line"></i> Rate: <span id="attendancePercentage">0</span>%</div>
+                    </div>
+                </div>
+                <div class="table-wrapper attendance-table-wrapper">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr><th>S.No</th><th>Student Name</th><th>Gender</th><th>Status</th><th>Last Update</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="attendanceTbody"></tbody>
+                    </table>
+                </div>
+                <div class="attendance-actions">
+                    <button id="markAllPresentBtn" class="fab-add secondary"><i class="fas fa-check-double"></i> Mark All Present</button>
+                    <button id="markAllAbsentBtn" class="fab-add"><i class="fas fa-ban"></i> Mark All Absent</button>
+                    <button id="saveAttendanceBtn" class="fab-add"><i class="fas fa-save"></i> Save Attendance</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS TAB -->
+        <div id="analyticsTab" class="tab-content">
+            <div class="glass-card full-width">
+                <h3><i class="fas fa-chart-pie"></i> 📊 Class Analytics Dashboard</h3>
+                <div class="analytics-grid">
+                    <div class="stat-card"><div class="stat-value" id="avgScore">--</div><div class="stat-label">Average (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="medianScore">--</div><div class="stat-label">Median (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="highestScore">--</div><div class="stat-label">Highest (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="lowestScore">--</div><div class="stat-label">Lowest (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="passRate">--</div><div class="stat-label">Pass Rate (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="excellentCount">--</div><div class="stat-label">Excellent (≥80)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="attendanceRate">--</div><div class="stat-label">Attendance (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gradeDistribution">--</div><div class="stat-label">Grade Distribution</div></div>
+                </div>
+                <canvas id="scoreChart" style="max-height: 300px; margin-top: 20px; width: 100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- REPORTS TAB -->
+        <div id="reportsTab" class="tab-content">
+            <div class="glass-card">
+                <h3><i class="fas fa-print"></i> 🎓 Reports & Backup</h3>
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <i class="fas fa-id-card"></i>
+                        <h4>Report Card</h4>
+                        <select id="reportStudentSelect" class="grade-dropdown"></select>
+                        <button id="generateReportBtn" class="icon-btn full-width"><i class="fas fa-print"></i> Generate</button>
+                    </div>
+                    <div class="report-card">
+                        <i class="fas fa-file-excel"></i>
+                        <h4>Export CSV</h4>
+                        <button id="exportCSVBtn" class="icon-btn full-width"><i class="fas fa-file-excel"></i> Export All</button>
+                    </div>
+                    <div class="report-card">
+                        <i class="fas fa-database"></i>
+                        <h4>Local Backup</h4>
+                        <button id="downloadBackupBtn" class="icon-btn full-width"><i class="fas fa-download"></i> Download Backup</button>
+                        <button id="restoreBackupBtn" class="icon-btn full-width"><i class="fas fa-upload"></i> Restore Backup</button>
+                        <input type="file" id="restoreFileInput" style="display:none" accept=".json">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN TAB -->
+        <div id="adminTab" class="tab-content">
+            <div class="glass-card">
+                <h3><i class="fas fa-crown"></i> Admin Controls</h3>
+                <div class="admin-buttons">
+                    <button id="resetTermBtn" class="icon-btn"><i class="fas fa-database"></i> Reset Current Term</button>
+                    <button id="resetAllBtn" class="icon-btn"><i class="fas fa-trash-alt"></i> Reset ALL Data</button>
+                </div>
+                <div class="storage-info">
+                    <i class="fas fa-database"></i> <strong>Local Storage:</strong> Active<br>
+                    <i class="fas fa-cloud-upload-alt"></i> <strong>Supabase Cloud:</strong> <span id="cloudStorageStatus">Not configured</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Card Modal -->
+        <div id="reportModal" class="modal">
+            <div class="modal-content" id="reportContent"></div>
+        </div>
+
+        <!-- AWESOME FOOTER -->
+        <div class="awesome-footer">
+            <div class="footer-content">
+                <p>✨ <strong class="developer-tag">TIS LabMaster</strong> | Developed with <i class="fas fa-heart" style="color:#f87171;"></i> by <strong class="developer-tag">Sol Ethio Coder</strong> ✨</p>
+                <p><i class="fas fa-database"></i> Local Storage | <i class="fas fa-chart-line"></i> Analytics | <i class="fas fa-print"></i> Report Cards | <i class="fas fa-cloud-upload-alt"></i> Supabase Cloud</p>
+                <div class="social-icons">
+                    <a href="https://github.com/Sol-Ethio-Coder"><i class="fab fa-github"></i></a>
+                    <a href="mailto: solash5156@gmail.com"><i class="fas fa-envelope"></i></a>
+                    <a href="https://www.linkedin.com/in/Sol-Ethio-Coder/"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p style="font-size:0.7rem;">© 2026 TIS | Auto-saves to Supabase cloud | Fully Responsive</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

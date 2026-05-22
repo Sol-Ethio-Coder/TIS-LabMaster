@@ -1,0 +1,24 @@
+
+### 2. Create .gitignore file:
+
+```gitignore
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.json
+tis_backup_*.json
+
+# Local config (optional - if you want to keep credentials private)
+# supabase-config.js
+
+# Logs
+*.log
+npm-debug.log*
