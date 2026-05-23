@@ -1,5 +1,4 @@
 // ==================== SUPABASE CLOUD STORAGE CONFIGURATION ====================
-// Default Supabase credentials (pre-configured)
 const DEFAULT_SUPABASE_URL = "https://bxtequbmmtzfkgshmtqe.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dGVxdWJtbXR6Zmtnc2htdHFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODQ3NTUsImV4cCI6MjA5NTA2MDc1NX0.85Wqg7kJqoAgZqlhNB6tbqnrtWGWgyB0a3AfCfD0GAI";
 
@@ -46,7 +45,15 @@ let currentClassId = "grade8A";
 let currentSort = { column: "name", direction: "asc" };
 let searchTerm = "";
 
-// Helper function to get status based on FINAL TOTAL (out of 100)
+// Attendance: current selected date (YYYY-MM-DD)
+let currentAttendanceDate = new Date().toISOString().split('T')[0];
+
+// Helper: get today's date string
+function getTodayDate() {
+    return new Date().toISOString().split('T')[0];
+}
+
+// Helper: get status based on final total (out of 100)
 function getStatusFromTotal(finalTotal) {
     if (finalTotal >= 90) return { text: "🏆 Excellent", class: "status-excellent" };
     if (finalTotal >= 80) return { text: "✅ Very Good", class: "status-very-good" };
@@ -55,6 +62,24 @@ function getStatusFromTotal(finalTotal) {
     if (finalTotal >= 50) return { text: "⚠️ Pass", class: "status-pass" };
     if (finalTotal >= 40) return { text: "📌 Below Average", class: "status-below" };
     return { text: "❌ Needs Improvement", class: "status-fail" };
+}
+
+// Compute final total (weighted, out of 100)
+function computeFinalTotal(componentScores, weights, finalExamScore) {
+    let courseworkSum = 0;
+    for (let [comp, weight] of Object.entries(weights)) {
+        let val = parseFloat(componentScores[comp]);
+        if (!isNaN(val) && val !== "") {
+            courseworkSum += val * weight;
+        }
+    }
+    let examVal = parseFloat(finalExamScore);
+    let examContribution = 0;
+    if (!isNaN(examVal) && examVal !== "") {
+        examContribution = (examVal / 30) * 30;
+    }
+    let finalTotal = courseworkSum + examContribution;
+    return Math.min(100, Math.max(0, finalTotal));
 }
 
 // ==================== LOCAL STORAGE FUNCTIONS ====================
@@ -82,7 +107,6 @@ function initTermData(term, classId) {
         return { name, gender, componentScores, finalExamScore: "", finalTotal: 0 };
     });
     let attendance = {};
-    students.forEach(s => { attendance[s.name] = { status: "absent", lastUpdated: new Date().toISOString() }; });
     schoolData[term][classId] = { students, attendance };
 }
 
@@ -94,256 +118,151 @@ function initAllTerms() {
     persistToLocal();
 }
 
+function migrateAttendance(term, classId) {
+    let classData = schoolData[term][classId];
+    if (!classData) return;
+    let oldAtt = classData.attendance;
+    if (oldAtt && !Array.isArray(oldAtt) && typeof oldAtt === 'object') {
+        let isDateBased = Object.keys(oldAtt).some(key => /^\d{4}-\d{2}-\d{2}$/.test(key));
+        if (!isDateBased && Object.keys(oldAtt).length > 0) {
+            let today = getTodayDate();
+            classData.attendance = {};
+            classData.attendance[today] = oldAtt;
+            persistToLocal();
+        }
+    }
+}
+
 function ensureDataExists() {
     ["term1", "term2", "term3"].forEach(t => {
         if (!schoolData[t]) schoolData[t] = {};
         CLASSES.forEach(cls => {
             if (!schoolData[t][cls.id]) initTermData(t, cls.id);
+            else {
+                migrateAttendance(t, cls.id);
+            }
         });
     });
 }
 
-// Compute final total as weighted sum (OUT OF 100)
-function computeFinalTotal(componentScores, weights, finalExamScore) {
-    // Calculate coursework contribution (70% of final grade)
-    let courseworkSum = 0;
-    for (let [comp, weight] of Object.entries(weights)) {
-        let val = parseFloat(componentScores[comp]);
-        if (!isNaN(val) && val !== "") {
-            courseworkSum += val * weight;
-        }
-    }
-    
-    // Calculate exam contribution (out of 30, converted to 30% of final grade)
-    let examVal = parseFloat(finalExamScore);
-    let examContribution = 0;
-    if (!isNaN(examVal) && examVal !== "") {
-        examContribution = (examVal / 30) * 30;
-    }
-    
-    // Final total is out of 100
-    let finalTotal = courseworkSum + examContribution;
-    
-    // Cap at 100
-    return Math.min(100, Math.max(0, finalTotal));
+// ==================== EXCEL UPLOAD - DISABLED ====================
+function uploadExcel() {
+    alert("Excel upload feature is currently disabled.\n\nPlease use the manual entry system:\n✓ Add students manually using 'Add Student' button\n✓ Enter scores directly in the marks table\n✓ Use backup/restore for data transfer");
+    return;
 }
 
 // ==================== SUPABASE FUNCTIONS ====================
 async function initSupabase() {
     if (typeof supabase === 'undefined') {
         console.warn("Supabase SDK not loaded");
-        updateCloudStatusMessage("⚠️ Supabase SDK not loaded - Please refresh the page", "error");
+        updateCloudStatusMessage("⚠️ Supabase SDK not loaded", "error");
         return false;
     }
-    
-    // Always try to connect with current config (has defaults)
     try {
         supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-        
         const { error } = await supabaseClient.from(SUPABASE_CONFIG.table).select('count', { count: 'exact', head: true });
-        
         if (error && error.message.includes("does not exist")) {
             updateCloudStatusMessage("📦 Table not found - will create on first sync", "info");
             isCloudConnected = true;
             updateCloudUI(true);
             return true;
         }
-        
         if (!error) {
             isCloudConnected = true;
             updateCloudUI(true);
-            updateCloudStatusMessage("✅ Supabase connected successfully!", "success");
+            updateCloudStatusMessage("✅ Supabase connected!", "success");
             return true;
         }
-        
         throw error;
     } catch (error) {
         console.error("Supabase connection error:", error);
-        updateCloudStatusMessage("❌ Connection failed - check credentials", "error");
+        updateCloudStatusMessage("❌ Connection failed", "error");
         updateCloudUI(false);
         return false;
     }
 }
 
 function configureCloud() {
-    const url = prompt("Enter your Supabase Project URL:", SUPABASE_CONFIG.url);
+    const url = prompt("Enter Supabase Project URL:", SUPABASE_CONFIG.url);
     if (!url) return;
-    
-    const key = prompt("Enter your Supabase Anon Key:", SUPABASE_CONFIG.anonKey);
+    const key = prompt("Enter Supabase Anon Key:", SUPABASE_CONFIG.anonKey);
     if (!key) return;
-    
     SUPABASE_CONFIG.url = url;
     SUPABASE_CONFIG.anonKey = key;
     localStorage.setItem("supabase_url", url);
     localStorage.setItem("supabase_anon_key", key);
-    
     updateCloudStatusMessage("🔌 Testing connection...", "info");
     initSupabase().then(() => {
-        if (isCloudConnected) {
-            alert("✅ Supabase configured successfully! Click 'Sync to Cloud' to backup your data.");
-        } else {
-            alert("❌ Connection failed. Please check your URL and Anon Key.");
-        }
+        alert(isCloudConnected ? "✅ Configured successfully!" : "❌ Connection failed.");
     });
 }
 
 function resetToDefaultCloud() {
-    if (confirm("⚠️ Reset to default cloud configuration?\n\nThis will use the default Supabase credentials.")) {
+    if (confirm("Reset cloud to default configuration?")) {
         localStorage.removeItem("supabase_url");
         localStorage.removeItem("supabase_anon_key");
         SUPABASE_CONFIG.url = DEFAULT_SUPABASE_URL;
         SUPABASE_CONFIG.anonKey = DEFAULT_SUPABASE_ANON_KEY;
-        updateCloudStatusMessage("🔄 Resetting to default configuration...", "info");
-        initSupabase().then(() => {
-            if (isCloudConnected) {
-                alert("✅ Reset to default cloud configuration successfully!");
-            } else {
-                alert("❌ Failed to connect to default cloud. Please check your internet.");
-            }
-        });
+        initSupabase();
+        alert("Reset to default cloud.");
     }
 }
 
 async function autoSyncToCloud() {
-    if (!isCloudConnected || !supabaseClient || !isLoggedIn) {
-        return false;
-    }
-    
+    if (!isCloudConnected || !supabaseClient || !isLoggedIn) return false;
     showSyncIndicator(true);
-    
     try {
-        const syncData = {
-            schoolData: schoolData,
-            currentTerm: currentTerm,
-            currentClassId: currentClassId,
-            teacher: currentUser,
-            timestamp: new Date().toISOString(),
-            version: "2.0"
-        };
-        
-        const { error } = await supabaseClient
-            .from(SUPABASE_CONFIG.table)
-            .upsert({
-                id: `teacher_${currentUser}`,
-                data: syncData,
-                updated_at: new Date().toISOString()
-            });
-        
+        const syncData = { schoolData, currentTerm, currentClassId, teacher: currentUser, timestamp: new Date().toISOString(), version: "2.0" };
+        const { error } = await supabaseClient.from(SUPABASE_CONFIG.table).upsert({ id: `teacher_${currentUser}`, data: syncData, updated_at: new Date().toISOString() });
         if (error) throw error;
-        
         showSyncIndicator(false);
         return true;
-        
-    } catch (error) {
-        console.error("Auto-sync error:", error);
-        showSyncIndicator(false);
-        return false;
-    }
+    } catch (error) { console.error("Auto-sync error:", error); showSyncIndicator(false); return false; }
 }
 
 async function syncToSupabase() {
-    if (!isCloudConnected || !supabaseClient) {
-        updateCloudStatusMessage("⚠️ Cloud not connected - reconnecting...", "warning");
-        await initSupabase();
-        if (!isCloudConnected) {
-            updateCloudStatusMessage("⚠️ Cannot sync - cloud not available", "error");
-            return false;
-        }
-    }
-    
-    updateCloudStatusMessage("☁️ Syncing to Supabase cloud...", "info");
-    
+    if (!isCloudConnected || !supabaseClient) { await initSupabase(); if (!isCloudConnected) return false; }
+    updateCloudStatusMessage("☁️ Syncing...", "info");
     try {
         ensureDataExists();
-        
-        const syncData = {
-            schoolData: schoolData,
-            currentTerm: currentTerm,
-            currentClassId: currentClassId,
-            teacher: currentUser,
-            timestamp: new Date().toISOString(),
-            version: "2.0"
-        };
-        
-        const { error } = await supabaseClient
-            .from(SUPABASE_CONFIG.table)
-            .upsert({
-                id: `teacher_${currentUser}`,
-                data: syncData,
-                updated_at: new Date().toISOString()
-            });
-        
+        const syncData = { schoolData, currentTerm, currentClassId, teacher: currentUser, timestamp: new Date().toISOString(), version: "2.0" };
+        const { error } = await supabaseClient.from(SUPABASE_CONFIG.table).upsert({ id: `teacher_${currentUser}`, data: syncData, updated_at: new Date().toISOString() });
         if (error) throw error;
-        
-        updateCloudStatusMessage("✅ Synced to Supabase cloud!", "success");
-        localStorage.setItem("tis_last_cloud_sync", new Date().toISOString());
+        updateCloudStatusMessage("✅ Synced!", "success");
         return true;
-        
-    } catch (error) {
-        console.error("Supabase sync error:", error);
-        updateCloudStatusMessage("⚠️ Sync failed: " + (error.message || "Unknown error"), "error");
-        return false;
-    }
+    } catch (error) { updateCloudStatusMessage("⚠️ Sync failed", "error"); return false; }
 }
 
 async function loadFromSupabase() {
     if (!isCloudConnected || !supabaseClient) return false;
-    
-    updateCloudStatusMessage("☁️ Loading from Supabase cloud...", "info");
-    
+    updateCloudStatusMessage("☁️ Loading...", "info");
     try {
-        const { data, error } = await supabaseClient
-            .from(SUPABASE_CONFIG.table)
-            .select('data')
-            .eq('id', `teacher_${currentUser}`)
-            .single();
-        
-        if (error) {
-            if (error.code === 'PGRST116') {
-                updateCloudStatusMessage("📀 No cloud data found", "info");
-                return false;
-            }
-            throw error;
-        }
-        
+        const { data, error } = await supabaseClient.from(SUPABASE_CONFIG.table).select('data').eq('id', `teacher_${currentUser}`).single();
+        if (error) throw error;
         if (data && data.data && data.data.schoolData) {
             schoolData = data.data.schoolData;
             currentTerm = data.data.currentTerm || "term2";
             currentClassId = data.data.currentClassId || "grade8A";
             persistToLocal();
-            updateCloudStatusMessage("✅ Loaded from Supabase cloud!", "success");
+            updateCloudStatusMessage("✅ Loaded from cloud!", "success");
             return true;
         }
-        
-        updateCloudStatusMessage("📀 No valid cloud data found", "info");
         return false;
-        
-    } catch (error) {
-        console.error("Supabase load error:", error);
-        updateCloudStatusMessage("📀 Using local storage", "info");
-        return false;
-    }
+    } catch (error) { updateCloudStatusMessage("📀 Using local", "info"); return false; }
 }
 
 function updateCloudUI(connected) {
     const cloudStatus = document.getElementById("cloudStatus");
     const cloudStorageStatus = document.getElementById("cloudStorageStatus");
     const cloudStatusMsg = document.getElementById("cloudStatusMsg");
-    
     if (connected) {
-        if (cloudStatus) {
-            cloudStatus.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Cloud: Connected';
-            cloudStatus.classList.add("connected");
-        }
+        if (cloudStatus) { cloudStatus.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Cloud: Connected'; cloudStatus.classList.add("connected"); }
         if (cloudStorageStatus) cloudStorageStatus.innerHTML = '✅ Connected - Auto-save active';
         if (cloudStatusMsg) cloudStatusMsg.innerHTML = "☁️ Supabase cloud connected • Auto-saves on every change";
     } else {
-        if (cloudStatus) {
-            cloudStatus.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Cloud: Offline';
-            cloudStatus.classList.remove("connected");
-        }
-        if (cloudStorageStatus) cloudStorageStatus.innerHTML = '⚠️ Connection issue - Check internet';
-        if (cloudStatusMsg) cloudStatusMsg.innerHTML = '⚠️ Cloud connection issue • Data saved locally only';
+        if (cloudStatus) { cloudStatus.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Cloud: Offline'; cloudStatus.classList.remove("connected"); }
+        if (cloudStorageStatus) cloudStorageStatus.innerHTML = '⚠️ Connection issue';
+        if (cloudStatusMsg) cloudStatusMsg.innerHTML = '⚠️ Cloud connection issue • Data saved locally';
     }
 }
 
@@ -351,87 +270,28 @@ function updateCloudStatusMessage(message, type) {
     const cloudStatusMsg = document.getElementById("cloudStatusMsg");
     if (cloudStatusMsg) {
         cloudStatusMsg.innerHTML = message;
-        
-        if (type !== "error") {
-            setTimeout(() => {
-                if (cloudStatusMsg && isCloudConnected) {
-                    cloudStatusMsg.innerHTML = "☁️ Supabase cloud connected • Auto-saves on every change";
-                } else if (cloudStatusMsg && !isCloudConnected) {
-                    cloudStatusMsg.innerHTML = '⚠️ Cloud connection issue • Data saved locally only';
-                }
-            }, 3000);
-        }
+        if (type !== "error") setTimeout(() => {
+            if (cloudStatusMsg && isCloudConnected) cloudStatusMsg.innerHTML = "☁️ Supabase cloud connected • Auto-saves on every change";
+            else if (cloudStatusMsg && !isCloudConnected) cloudStatusMsg.innerHTML = '⚠️ Cloud connection issue • Data saved locally';
+        }, 3000);
     }
 }
 
-function showSyncIndicator(syncing = true) {
+function showSyncIndicator(syncing) {
     const indicator = document.getElementById("syncIndicator");
     if (!indicator) return;
-    
-    if (syncing) {
-        indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
-        indicator.style.color = "#ff9800";
-    } else {
-        indicator.innerHTML = '<i class="fas fa-check"></i> Synced';
-        indicator.style.color = "#4caf50";
-        setTimeout(() => {
-            if (indicator) indicator.innerHTML = "";
-        }, 2000);
-    }
+    if (syncing) { indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...'; indicator.style.color = "#ff9800"; }
+    else { indicator.innerHTML = '<i class="fas fa-check"></i> Synced'; indicator.style.color = "#4caf50"; setTimeout(() => { if (indicator) indicator.innerHTML = ""; }, 2000); }
 }
 
-async function manualCloudSync() {
-    updateCloudStatusMessage("☁️ Manual sync in progress...", "info");
-    const result = await syncToSupabase();
-    
-    if (result) {
-        alert("✅ Data synced to Supabase cloud successfully!");
-    } else {
-        alert("❌ Sync failed. Please check your internet connection.");
-    }
-}
+async function manualCloudSync() { await syncToSupabase(); alert(isCloudConnected ? "✅ Synced!" : "❌ Sync failed."); }
+async function manualLoadFromCloud() { const ok = await loadFromSupabase(); if (ok) { renderMarklist(); renderAttendance(); updateAnalytics(); updateReportStudentSelect(); alert("✅ Loaded from cloud!"); } else alert("❌ No cloud data."); }
 
-async function manualLoadFromCloud() {
-    if (!isCloudConnected || !supabaseClient) {
-        await initSupabase();
-        if (!isCloudConnected) {
-            alert("❌ Cannot connect to cloud. Please check your internet connection.");
-            return;
-        }
-    }
-    
-    updateCloudStatusMessage("☁️ Loading from cloud...", "info");
-    
-    const result = await loadFromSupabase();
-    
-    if (result) {
-        renderMarklist();
-        renderAttendance();
-        updateAnalytics();
-        updateReportStudentSelect();
-        alert("✅ Data loaded from Supabase cloud successfully!");
-    } else {
-        alert("❌ No cloud data found or load failed.\n\nPlease sync your data to cloud first.");
-    }
-}
+// ==================== THEME ====================
+function initTheme() { const saved = localStorage.getItem("tis_theme"); if (saved === "light") document.body.classList.add("light-mode"); else document.body.classList.remove("light-mode"); }
+function toggleTheme() { document.body.classList.toggle("light-mode"); localStorage.setItem("tis_theme", document.body.classList.contains("light-mode") ? "light" : "dark"); }
 
-// ==================== THEME FUNCTIONS ====================
-function initTheme() {
-    const savedTheme = localStorage.getItem("tis_theme");
-    if (savedTheme === "light") {
-        document.body.classList.add("light-mode");
-    } else {
-        document.body.classList.remove("light-mode");
-    }
-}
-
-function toggleTheme() {
-    document.body.classList.toggle("light-mode");
-    const isLightMode = document.body.classList.contains("light-mode");
-    localStorage.setItem("tis_theme", isLightMode ? "light" : "dark");
-}
-
-// ==================== UI RENDER FUNCTIONS ====================
+// ==================== UI RENDER ====================
 function renderMarklistHeader() {
     let cls = CLASSES.find(c => c.id === currentClassId);
     if (!cls) return;
@@ -439,20 +299,11 @@ function renderMarklistHeader() {
     let weightsContainer = document.getElementById("weightsContainer");
     weightsContainer.innerHTML = "";
     Object.entries(cls.weights).forEach(([comp, weight]) => {
-        let span = document.createElement("span");
-        span.className = "weight-badge";
-        span.innerHTML = `${comp} <strong>${(weight*100).toFixed(0)}%</strong>`;
+        let span = document.createElement("span"); span.className = "weight-badge"; span.innerHTML = `${comp} <strong>${(weight*100).toFixed(0)}%</strong>`;
         weightsContainer.appendChild(span);
     });
-    
-    // Add exam weight info
-    let examSpan = document.createElement("span");
-    examSpan.className = "weight-badge";
-    examSpan.style.background = "#ff9800";
-    examSpan.style.color = "white";
-    examSpan.innerHTML = `Final Exam <strong>30%</strong> (out of 30)`;
+    let examSpan = document.createElement("span"); examSpan.className = "weight-badge"; examSpan.style.background = "#ff9800"; examSpan.style.color = "white"; examSpan.innerHTML = `Final Exam <strong>30%</strong> (out of 30)`;
     weightsContainer.appendChild(examSpan);
-    
     let thead = document.getElementById("marksTableHead");
     thead.innerHTML = "";
     let headerRow = document.createElement("tr");
@@ -463,12 +314,8 @@ function renderMarklistHeader() {
 }
 
 function sortByColumn(column) {
-    if (currentSort.column === column) {
-        currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
-    } else {
-        currentSort.column = column;
-        currentSort.direction = "asc";
-    }
+    if (currentSort.column === column) currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+    else { currentSort.column = column; currentSort.direction = "asc"; }
     renderMarklist();
 }
 window.sortByColumn = sortByColumn;
@@ -480,7 +327,7 @@ function renderMarklist() {
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
     let filteredStudents = data.students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    let sortedStudents = [...filteredStudents].sort((a, b) => {
+    let sortedStudents = [...filteredStudents].sort((a,b) => {
         let valA = currentSort.column === "name" ? a.name : a.finalTotal;
         let valB = currentSort.column === "name" ? b.name : b.finalTotal;
         if (typeof valA === "string") return currentSort.direction === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
@@ -488,78 +335,57 @@ function renderMarklist() {
     });
     let tbody = document.getElementById("marksTbody");
     tbody.innerHTML = "";
-    
     sortedStudents.forEach((student, idx) => {
         let row = tbody.insertRow();
-        row.insertCell(0).innerHTML = idx + 1;
+        row.insertCell(0).innerHTML = idx+1;
         row.insertCell(1).innerHTML = student.name;
         row.insertCell(2).innerHTML = student.gender;
-        
-        // Component scores (each out of 100, weighted)
         Object.keys(cls.weights).forEach(comp => {
             let cell = row.insertCell();
-            let inp = document.createElement("input");
-            inp.type = "number";
-            inp.value = student.componentScores[comp] || "";
-            inp.placeholder = "0-100";
-            inp.min = "0";
-            inp.max = "100";
-            inp.classList.add("score-input");
+            let inp = document.createElement("input"); inp.type = "number"; inp.value = student.componentScores[comp] || ""; inp.placeholder = "0-100"; inp.min=0; inp.max=100; inp.classList.add("score-input");
             inp.onchange = async (e) => {
-                let val = e.target.value === "" ? "" : Math.min(100, Math.max(0, parseFloat(e.target.value) || 0));
+                let val = e.target.value === "" ? "" : Math.min(100, Math.max(0, parseFloat(e.target.value)||0));
                 student.componentScores[comp] = val;
                 student.finalTotal = computeFinalTotal(student.componentScores, cls.weights, student.finalExamScore);
-                persistToLocal();
-                renderMarklist();
-                updateAnalytics();
-                await autoSyncToCloud();
+                persistToLocal(); renderMarklist(); updateAnalytics(); await autoSyncToCloud();
             };
             cell.appendChild(inp);
         });
-        
-        // Final Exam (out of 30)
         let examCell = row.insertCell();
-        let examInput = document.createElement("input");
-        examInput.type = "number";
-        examInput.placeholder = "0-30";
-        examInput.max = "30";
-        examInput.min = "0";
-        examInput.classList.add("score-input");
-        examInput.value = student.finalExamScore || "";
+        let examInput = document.createElement("input"); examInput.type = "number"; examInput.placeholder = "0-30"; examInput.max=30; examInput.min=0; examInput.classList.add("score-input"); examInput.value = student.finalExamScore || "";
         examInput.onchange = async (e) => {
-            let examVal = e.target.value === "" ? "" : Math.min(30, Math.max(0, parseFloat(e.target.value) || 0));
+            let examVal = e.target.value === "" ? "" : Math.min(30, Math.max(0, parseFloat(e.target.value)||0));
             student.finalExamScore = examVal;
             student.finalTotal = computeFinalTotal(student.componentScores, cls.weights, student.finalExamScore);
-            persistToLocal();
-            renderMarklist();
-            updateAnalytics();
-            await autoSyncToCloud();
+            persistToLocal(); renderMarklist(); updateAnalytics(); await autoSyncToCloud();
         };
         examCell.appendChild(examInput);
-        
-        // Final Total (out of 100)
-        let totalCell = row.insertCell();
-        totalCell.innerHTML = student.finalTotal.toFixed(1) + "%";
-        
-        // Status based on FINAL TOTAL (out of 100)
+        let totalCell = row.insertCell(); totalCell.innerHTML = student.finalTotal.toFixed(1)+"%";
         let status = getStatusFromTotal(student.finalTotal);
-        let statusCell = row.insertCell();
-        statusCell.innerHTML = status.text;
-        statusCell.className = status.class;
+        let statusCell = row.insertCell(); statusCell.innerHTML = status.text; statusCell.className = status.class;
     });
 }
 
+// ==================== ATTENDANCE (DAY-BY-DAY) ====================
 function renderAttendance() {
     if (!isLoggedIn) return;
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
+    if (!data.attendance[currentAttendanceDate]) {
+        data.attendance[currentAttendanceDate] = {};
+        data.students.forEach(s => {
+            data.attendance[currentAttendanceDate][s.name] = { status: "absent", lastUpdated: new Date().toISOString() };
+        });
+        persistToLocal();
+    }
+    let dayAtt = data.attendance[currentAttendanceDate];
     let tbody = document.getElementById("attendanceTbody");
     tbody.innerHTML = "";
-    let filteredStudents = data.students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    filteredStudents.forEach((s, idx) => {
-        let att = data.attendance[s.name] || { status: "absent", lastUpdated: new Date().toISOString() };
+    let filtered = data.students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    filtered.forEach((s, idx) => {
+        let att = dayAtt[s.name] || { status: "absent", lastUpdated: new Date().toISOString() };
         let row = tbody.insertRow();
-        row.insertCell(0).innerHTML = idx + 1;
+        row.insertCell(0).innerHTML = idx+1;
         row.insertCell(1).innerHTML = s.name;
         row.insertCell(2).innerHTML = s.gender;
         let statusSpan = document.createElement("span");
@@ -572,7 +398,7 @@ function renderAttendance() {
         toggleBtn.className = "icon-btn";
         toggleBtn.onclick = async () => {
             let newStatus = att.status === "present" ? "absent" : "present";
-            schoolData[currentTerm][currentClassId].attendance[s.name] = { status: newStatus, lastUpdated: new Date().toISOString() };
+            data.attendance[currentAttendanceDate][s.name] = { status: newStatus, lastUpdated: new Date().toISOString() };
             persistToLocal();
             renderAttendance();
             updateAnalytics();
@@ -588,8 +414,9 @@ function updateAttendanceStats() {
     if (!isLoggedIn) return;
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
+    let dayAtt = data.attendance[currentAttendanceDate] || {};
     let total = data.students.length;
-    let present = Object.values(data.attendance).filter(a => a.status === "present").length;
+    let present = Object.values(dayAtt).filter(a => a.status === "present").length;
     let percentage = total ? ((present / total) * 100).toFixed(1) : 0;
     document.getElementById("totalStudents").innerText = total;
     document.getElementById("presentCount").innerText = present;
@@ -600,118 +427,98 @@ function updateAttendanceStats() {
 function markAllPresent() {
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
-    data.students.forEach(s => { data.attendance[s.name] = { status: "present", lastUpdated: new Date().toISOString() }; });
+    if (!data.attendance[currentAttendanceDate]) data.attendance[currentAttendanceDate] = {};
+    data.students.forEach(s => {
+        data.attendance[currentAttendanceDate][s.name] = { status: "present", lastUpdated: new Date().toISOString() };
+    });
     persistToLocal();
     renderAttendance();
     updateAnalytics();
     autoSyncToCloud();
-    alert("All students marked as PRESENT!");
+    alert(`All marked PRESENT for ${currentAttendanceDate}`);
 }
 
 function markAllAbsent() {
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
-    data.students.forEach(s => { data.attendance[s.name] = { status: "absent", lastUpdated: new Date().toISOString() }; });
+    if (!data.attendance[currentAttendanceDate]) data.attendance[currentAttendanceDate] = {};
+    data.students.forEach(s => {
+        data.attendance[currentAttendanceDate][s.name] = { status: "absent", lastUpdated: new Date().toISOString() };
+    });
     persistToLocal();
     renderAttendance();
     updateAnalytics();
     autoSyncToCloud();
-    alert("All students marked as ABSENT!");
+    alert(`All marked ABSENT for ${currentAttendanceDate}`);
 }
 
+// ==================== ANALYTICS ====================
 function updateAnalytics() {
     if (!isLoggedIn) return;
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
-    
     let totals = data.students.map(s => s.finalTotal).filter(v => !isNaN(v) && v > 0);
-    
-    let avg = totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(1) : 0;
-    let sorted = [...totals].sort((a, b) => a - b);
-    let median = sorted.length ? sorted[Math.floor(sorted.length / 2)].toFixed(1) : 0;
+    let avg = totals.length ? (totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1) : 0;
+    let sorted = [...totals].sort((a,b)=>a-b);
+    let median = sorted.length ? sorted[Math.floor(sorted.length/2)].toFixed(1) : 0;
     let highest = totals.length ? Math.max(...totals).toFixed(1) : 0;
     let lowest = totals.length ? Math.min(...totals).toFixed(1) : 0;
-    let passCount = totals.filter(s => s >= 60).length;
-    let passRate = totals.length ? ((passCount / totals.length) * 100).toFixed(1) : 0;
-    let excellentCount = totals.filter(s => s >= 80).length;
-    let presentCount = Object.values(data.attendance).filter(a => a.status === "present").length;
-    let attendanceRate = data.students.length ? ((presentCount / data.students.length) * 100).toFixed(1) : 0;
-    
-    let distribution = `${totals.filter(s => s >= 80).length} A, ${totals.filter(s => s >= 60 && s < 80).length} B, ${totals.filter(s => s >= 50 && s < 60).length} C, ${totals.filter(s => s < 50).length} D`;
-    
-    document.getElementById("avgScore").innerHTML = avg + "%";
-    document.getElementById("medianScore").innerHTML = median + "%";
-    document.getElementById("highestScore").innerHTML = highest + "%";
-    document.getElementById("lowestScore").innerHTML = lowest + "%";
-    document.getElementById("passRate").innerHTML = passRate + "%";
+    let passCount = totals.filter(s=>s>=60).length;
+    let passRate = totals.length ? ((passCount/totals.length)*100).toFixed(1) : 0;
+    let excellentCount = totals.filter(s=>s>=80).length;
+    let presentCount = data.attendance[currentAttendanceDate] ? Object.values(data.attendance[currentAttendanceDate]).filter(a=>a.status==="present").length : 0;
+    let attendanceRate = data.students.length ? ((presentCount/data.students.length)*100).toFixed(1) : 0;
+    let distribution = `${totals.filter(s=>s>=80).length} A, ${totals.filter(s=>s>=60&&s<80).length} B, ${totals.filter(s=>s>=50&&s<60).length} C, ${totals.filter(s=>s<50).length} D`;
+    document.getElementById("avgScore").innerHTML = avg+"%";
+    document.getElementById("medianScore").innerHTML = median+"%";
+    document.getElementById("highestScore").innerHTML = highest+"%";
+    document.getElementById("lowestScore").innerHTML = lowest+"%";
+    document.getElementById("passRate").innerHTML = passRate+"%";
     document.getElementById("excellentCount").innerHTML = excellentCount;
-    document.getElementById("attendanceRate").innerHTML = attendanceRate + "%";
+    document.getElementById("attendanceRate").innerHTML = attendanceRate+"%";
     document.getElementById("gradeDistribution").innerHTML = distribution;
 }
 
+// ==================== OTHER FUNCTIONS ====================
 function addStudent() {
-    let name = prompt("Enter student name:");
-    if (!name) return;
-    let gender = prompt("Enter gender (M/F):", "M");
+    let name = prompt("Enter student name:"); if(!name) return;
+    let gender = prompt("Gender (M/F):","M");
     let data = schoolData[currentTerm][currentClassId];
-    let cls = CLASSES.find(c => c.id === currentClassId);
-    let componentScores = {};
-    Object.keys(cls.weights).forEach(comp => { componentScores[comp] = ""; });
-    data.students.push({ name, gender, componentScores, finalExamScore: "", finalTotal: 0 });
-    data.attendance[name] = { status: "absent", lastUpdated: new Date().toISOString() };
-    persistToLocal();
-    renderMarklist();
-    renderAttendance();
-    updateAnalytics();
-    updateAttendanceStats();
-    autoSyncToCloud();
+    let cls = CLASSES.find(c=>c.id===currentClassId);
+    let componentScores = {}; Object.keys(cls.weights).forEach(c=>componentScores[c]="");
+    data.students.push({name,gender,componentScores,finalExamScore:"",finalTotal:0});
+    data.attendance[currentAttendanceDate] = data.attendance[currentAttendanceDate] || {};
+    data.attendance[currentAttendanceDate][name] = { status: "absent", lastUpdated: new Date().toISOString() };
+    persistToLocal(); renderMarklist(); renderAttendance(); updateAnalytics(); updateAttendanceStats(); autoSyncToCloud();
 }
 
 function generateReportCard(studentName) {
     let modal = document.getElementById("reportModal");
     let content = document.getElementById("reportContent");
     let termsHtml = "";
-    for (let term of ["term1", "term2", "term3"]) {
-        let termName = term === "term1" ? "First Term" : term === "term2" ? "Second Term" : "Third Term";
+    for (let term of ["term1","term2","term3"]) {
+        let termName = term==="term1"?"First Term":term==="term2"?"Second Term":"Third Term";
         let data = schoolData[term][currentClassId];
-        let student = data?.students.find(s => s.name === studentName);
-        if (student) {
+        let student = data?.students.find(s=>s.name===studentName);
+        if(student){
             let status = getStatusFromTotal(student.finalTotal);
-            termsHtml += `<tr>
-                <td>${termName}</td>
-                <td>${student.finalTotal.toFixed(1)}%</td>                <td>${student.finalExamScore || "--"} / 30</td>
-                <td class="${status.class}">${status.text}</td>
-            </tr>`;
+            termsHtml += `<tr><td>${termName}</td><td>${student.finalTotal.toFixed(1)}%</td><td>${student.finalExamScore||"--"} / 30</td><td class="${status.class}">${status.text}</td><tr>`;
         }
     }
-    content.innerHTML = `
-        <div class="report-card-print">
-            <div class="header"><h2>TIS LabMaster</h2><h3>Student Report Card</h3><p>${studentName}</p><p>Generated: ${new Date().toLocaleString()}</p></div>
-            <table border="1" style="width:100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #667eea; color: white;">
-                        <th>Term</th><th>Final Total (%)</th><th>Final Exam</th><th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>${termsHtml}</tbody>
-            </table>
-            <button class="print-btn" onclick="window.print()">🖨️ Print</button>
-            <button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">Close</button>
-        </div>
-    `;
+    content.innerHTML = `<div class="report-card-print"><div class="header"><h2>TIS LabMaster</h2><h3>Student Report Card</h3><p>${studentName}</p><p>${new Date().toLocaleString()}</p></div><table border="1"><thead><tr style="background:#667eea;color:white"><th>Term</th><th>Final Total (%)</th><th>Final Exam</th><th>Status</th></tr></thead><tbody>${termsHtml}</tbody></table><button class="print-btn" onclick="window.print()">🖨️ Print</button><button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">Close</button></div>`;
     modal.style.display = "flex";
 }
 
 function exportAllCSV() {
-    let rows = [["Term", "Class", "Student Name", "Gender", "Component Scores", "Final Exam (0-30)", "Final Total (%)", "Status"]];
-    for (let term of ["term1", "term2", "term3"]) {
+    let rows = [["Term","Class","Student Name","Gender","Component Scores","Final Exam (0-30)","Final Total (%)","Status"]];
+    for (let term of ["term1","term2","term3"]) {
         for (let cls of CLASSES) {
             let data = schoolData[term][cls.id];
             if (data && data.students) {
                 data.students.forEach(s => {
                     let components = Object.values(s.componentScores).join("|");
                     let status = getStatusFromTotal(s.finalTotal);
-                    rows.push([term, cls.display, s.name, s.gender, components, s.finalExamScore || "", s.finalTotal.toFixed(1) + "%", status.text]);
+                    rows.push([term, cls.display, s.name, s.gender, components, s.finalExamScore || "", s.finalTotal.toFixed(1)+"%", status.text]);
                 });
             }
         }
@@ -726,7 +533,7 @@ function exportAllCSV() {
 }
 
 function downloadBackup() {
-    const backup = { schoolData: schoolData, timestamp: new Date().toISOString(), version: "2.0", teacher: currentUser };
+    const backup = { schoolData, timestamp: new Date().toISOString(), version: "2.0", teacher: currentUser };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -734,7 +541,7 @@ function downloadBackup() {
     a.download = `tis_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    alert("✅ Backup downloaded! Save to Google Drive.");
+    alert("✅ Backup downloaded!");
 }
 
 function restoreBackup(file) {
@@ -750,18 +557,14 @@ function restoreBackup(file) {
                 updateAnalytics();
                 autoSyncToCloud();
                 alert("✅ Backup restored!");
-            } else {
-                alert("Invalid backup file");
-            }
-        } catch (err) {
-            alert("Error reading backup file");
-        }
+            } else alert("Invalid backup file");
+        } catch (err) { alert("Error reading backup file"); }
     };
     reader.readAsText(file);
 }
 
 function resetCurrentTerm() {
-    if (confirm("⚠️ Reset current term? This cannot be undone!")) {
+    if (confirm("Reset current term?")) {
         initTermData(currentTerm, currentClassId);
         persistToLocal();
         renderMarklist();
@@ -773,34 +576,72 @@ function resetCurrentTerm() {
 }
 
 function resetAllData() {
-    if (confirm("⚠️ RESET ALL DATA? This will delete everything!")) {
-        if (prompt("Type 'CONFIRM' to delete all data") === "CONFIRM") {
-            initAllTerms();
-            renderMarklist();
-            renderAttendance();
-            updateAnalytics();
-            autoSyncToCloud();
-            alert("All data reset.");
-        }
+    if (confirm("RESET ALL DATA?") && prompt("Type 'CONFIRM'") === "CONFIRM") {
+        initAllTerms();
+        renderMarklist();
+        renderAttendance();
+        updateAnalytics();
+        autoSyncToCloud();
+        alert("All data reset.");
     }
 }
 
-// Add status styles to the page
 function addStatusStyles() {
     const style = document.createElement('style');
-    style.textContent = `
-        .status-excellent { color: #4caf50; font-weight: bold; }
-        .status-very-good { color: #8bc34a; font-weight: bold; }
-        .status-good { color: #2196f3; font-weight: bold; }
-        .status-satisfactory { color: #00bcd4; font-weight: bold; }
-        .status-pass { color: #ff9800; font-weight: bold; }
-        .status-below { color: #ff5722; font-weight: bold; }
-        .status-fail { color: #f44336; font-weight: bold; }
-    `;
+    style.textContent = `.status-excellent{color:#4caf50;font-weight:bold}.status-very-good{color:#8bc34a;font-weight:bold}.status-good{color:#2196f3;font-weight:bold}.status-satisfactory{color:#00bcd4;font-weight:bold}.status-pass{color:#ff9800;font-weight:bold}.status-below{color:#ff5722;font-weight:bold}.status-fail{color:#f44336;font-weight:bold}`;
     document.head.appendChild(style);
 }
 
-// ==================== INITIALIZATION ====================
+// ==================== RESET GRADE 8A TO DEFAULT ====================
+function resetGrade8AToDefault() {
+    const defaultGrade8A = [
+        "Amen Addisu", "Arsemawit Mhireteab", "Arsonia Tadesse", "Aymen Abdulaziz",
+        "Biruk Abiy", "Bisrat Aydefer", "Christian Yohannes", "Diamond G|Egziahber",
+        "Eldaah Zacharias", "Eldana Tewodros", "Eman Yusuf", "Emanda Girma",
+        "Eyobed Wossen", "Eyosias Yirga", "Inam Miraj", "Makbel Tekle",
+        "Maraki Anteneh", "Marken Mesay", "Mathias Yohannes", "Nahom Abiy",
+        "Naomi Tekle", "Naomi Daniel", "Noah Mohammed", "Nobel Addisalem",
+        "Rajan Dirriba", "Rani Mayur", "Rediet Getu", "Reyan Abduljelil",
+        "Soliyana Alemayehu", "Tsinat Abiy", "Yafet Alexander", "Yohannes Tefera"
+    ];
+    
+    if (!confirm(`⚠️ This will reset Grade 8A in ALL terms to default ${defaultGrade8A.length} students.\n\nClick OK to continue.`)) return;
+    
+    const terms = ["term1", "term2", "term3"];
+    for (let term of terms) {
+        if (schoolData[term] && schoolData[term].grade8A) {
+            const currentStudents = schoolData[term].grade8A.students;
+            const originalStudents = currentStudents.filter(s => defaultGrade8A.includes(s.name));
+            schoolData[term].grade8A.students = originalStudents;
+            
+            // Clean up attendance
+            const attendance = schoolData[term].grade8A.attendance;
+            for (let date in attendance) {
+                const newDayAtt = {};
+                defaultGrade8A.forEach(name => {
+                    if (attendance[date] && attendance[date][name]) {
+                        newDayAtt[name] = attendance[date][name];
+                    } else {
+                        newDayAtt[name] = { status: "absent", lastUpdated: new Date().toISOString() };
+                    }
+                });
+                attendance[date] = newDayAtt;
+            }
+        }
+    }
+    
+    persistToLocal();
+    if (currentClassId === "grade8A") {
+        renderMarklist();
+        renderAttendance();
+        updateAnalytics();
+        updateReportStudentSelect();
+    }
+    autoSyncToCloud();
+    alert(`✅ Grade 8A reset complete! Now has ${defaultGrade8A.length} students in all terms.`);
+}
+
+// ==================== INITIALIZATION & EVENT LISTENERS ====================
 function initClassDropdown() {
     let select = document.getElementById("classSelector");
     if (!select) return;
@@ -831,55 +672,35 @@ function updateReportStudentSelect() {
 }
 
 function updateClock() {
-    const dateTimeEl = document.getElementById("liveDateTime");
-    if (dateTimeEl) {
-        dateTimeEl.innerHTML = `<i class="far fa-calendar-alt"></i> ${new Date().toLocaleString()}`;
-    }
+    const el = document.getElementById("liveDateTime");
+    if (el) el.innerHTML = `<i class="far fa-calendar-alt"></i> ${new Date().toLocaleString()}`;
 }
 
 function updateOnline() {
-    let badge = document.getElementById("onlineBadge");
-    if (badge) {
-        badge.innerHTML = navigator.onLine ? '<i class="fas fa-wifi"></i> Online' : '<i class="fas fa-plug"></i> Offline';
-    }
+    const badge = document.getElementById("onlineBadge");
+    if (badge) badge.innerHTML = navigator.onLine ? '<i class="fas fa-wifi"></i> Online' : '<i class="fas fa-plug"></i> Offline';
 }
 
-// ==================== AUTO-SAVE SCHEDULER ====================
 let autoSyncInterval = null;
-
 function startAutoCloudSync() {
     if (autoSyncInterval) clearInterval(autoSyncInterval);
     autoSyncInterval = setInterval(() => {
-        if (isLoggedIn && isCloudConnected && navigator.onLine) {
-            autoSyncToCloud();
-        }
+        if (isLoggedIn && isCloudConnected && navigator.onLine) autoSyncToCloud();
     }, 3 * 60 * 1000);
 }
 
-// ==================== LOGIN ====================
 function handleLogin() {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
-    
     if ((username === "admin" && password === "admin123") || (username === "teacher" && password === "teacher")) {
         currentUser = username;
         isLoggedIn = true;
-        
-        if (!loadData()) {
-            initAllTerms();
-        } else {
-            ensureDataExists();
-        }
-        
-        const loginPanel = document.getElementById("loginPanel");
+        if (!loadData()) initAllTerms();
+        else ensureDataExists();
+        document.getElementById("loginPanel").style.display = "none";
         const mainApp = document.getElementById("mainApp");
-        
-        if (loginPanel) loginPanel.style.display = "none";
-        if (mainApp) {
-            mainApp.style.display = "block";
-            mainApp.classList.add("visible");
-        }
-        
+        mainApp.style.display = "block";
+        mainApp.classList.add("visible");
         initClassDropdown();
         updateReportStudentSelect();
         renderMarklist();
@@ -888,19 +709,12 @@ function handleLogin() {
         updateClock();
         setInterval(updateClock, 1000);
         updateOnline();
-        
         if (username !== "admin") {
             const adminTab = document.querySelector('.tab-btn[data-tab="admin"]');
             if (adminTab) adminTab.style.display = "none";
         }
-        
-        const loginError = document.getElementById("loginError");
-        if (loginError) loginError.innerHTML = "";
-        
-        // Add status styles
+        document.getElementById("loginError").innerHTML = "";
         addStatusStyles();
-        
-        // Initialize Supabase (will use defaults)
         initSupabase().then(() => {
             if (isCloudConnected) {
                 loadFromSupabase().then(() => {
@@ -911,12 +725,8 @@ function handleLogin() {
                 startAutoCloudSync();
             }
         });
-        
     } else {
-        const loginError = document.getElementById("loginError");
-        if (loginError) {
-            loginError.innerHTML = '❌ Invalid credentials! Try again!';
-        }
+        document.getElementById("loginError").innerHTML = "Invalid credentials! Try again!";
     }
 }
 
@@ -924,183 +734,75 @@ function handleLogout() {
     isLoggedIn = false;
     currentUser = null;
     if (autoSyncInterval) clearInterval(autoSyncInterval);
-    
-    const mainApp = document.getElementById("mainApp");
-    const loginPanel = document.getElementById("loginPanel");
-    const usernameInput = document.getElementById("loginUsername");
-    const passwordInput = document.getElementById("loginPassword");
-    const loginError = document.getElementById("loginError");
-    
-    if (mainApp) mainApp.style.display = "none";
-    if (loginPanel) loginPanel.style.display = "flex";
-    if (usernameInput) usernameInput.value = "";
-    if (passwordInput) passwordInput.value = "";
-    if (loginError) loginError.innerHTML = "";
-}
-
-// ==================== EVENT LISTENERS ====================
-document.addEventListener("DOMContentLoaded", function() {
-    const mainApp = document.getElementById("mainApp");
-    const loginPanel = document.getElementById("loginPanel");
-    
-    if (mainApp) mainApp.style.display = "none";
-    if (loginPanel) loginPanel.style.display = "flex";
-    
-    initTheme();
-    initTabs();
-    
-    console.log("TIS LabMaster Ready!");
-    console.log("☁️ Supabase cloud storage configured by default");
-});
-
-const loginBtn = document.getElementById("doLoginBtn");
-if (loginBtn) {
-    loginBtn.addEventListener("click", handleLogin);
-}
-
-const logoutBtn = document.getElementById("logoutBtn");
-if (logoutBtn) {
-    logoutBtn.addEventListener("click", handleLogout);
-}
-
-const loginPassword = document.getElementById("loginPassword");
-if (loginPassword) {
-    loginPassword.addEventListener("keypress", (e) => { if (e.key === "Enter") handleLogin(); });
-}
-
-const loginUsername = document.getElementById("loginUsername");
-if (loginUsername) {
-    loginUsername.addEventListener("keypress", (e) => { if (e.key === "Enter") handleLogin(); });
-}
-
-const termSelector = document.getElementById("termSelector");
-if (termSelector) {
-    termSelector.addEventListener("change", (e) => {
-        currentTerm = e.target.value;
-        renderMarklist();
-        renderAttendance();
-        updateAnalytics();
-        updateReportStudentSelect();
-    });
-}
-
-const searchInput = document.getElementById("searchInput");
-if (searchInput) {
-    searchInput.addEventListener("input", (e) => {
-        searchTerm = e.target.value;
-        renderMarklist();
-        renderAttendance();
-    });
-}
-
-const refreshMarksBtn = document.getElementById("refreshMarksBtn");
-if (refreshMarksBtn) {
-    refreshMarksBtn.addEventListener("click", () => {
-        renderMarklist();
-        updateAnalytics();
-    });
-}
-
-const addStudentBtn = document.getElementById("addStudentBtn");
-if (addStudentBtn) addStudentBtn.addEventListener("click", addStudent);
-
-const markAllPresentBtn = document.getElementById("markAllPresentBtn");
-if (markAllPresentBtn) markAllPresentBtn.addEventListener("click", markAllPresent);
-
-const markAllAbsentBtn = document.getElementById("markAllAbsentBtn");
-if (markAllAbsentBtn) markAllAbsentBtn.addEventListener("click", markAllAbsent);
-
-const saveAttendanceBtn = document.getElementById("saveAttendanceBtn");
-if (saveAttendanceBtn) saveAttendanceBtn.addEventListener("click", () => {
-    persistToLocal();
-    autoSyncToCloud();
-    alert("Attendance saved!");
-});
-
-const generateReportBtn = document.getElementById("generateReportBtn");
-if (generateReportBtn) {
-    generateReportBtn.addEventListener("click", () => {
-        let name = document.getElementById("reportStudentSelect")?.value;
-        if (name) generateReportCard(name);
-    });
-}
-
-const exportCSVBtn = document.getElementById("exportCSVBtn");
-if (exportCSVBtn) exportCSVBtn.addEventListener("click", exportAllCSV);
-
-const downloadBackupBtn = document.getElementById("downloadBackupBtn");
-if (downloadBackupBtn) downloadBackupBtn.addEventListener("click", downloadBackup);
-
-const restoreBackupBtn = document.getElementById("restoreBackupBtn");
-if (restoreBackupBtn) {
-    restoreBackupBtn.addEventListener("click", () => {
-        const restoreInput = document.getElementById("restoreFileInput");
-        if (restoreInput) restoreInput.click();
-    });
-}
-
-const restoreFileInput = document.getElementById("restoreFileInput");
-if (restoreFileInput) {
-    restoreFileInput.addEventListener("change", (e) => {
-        if (e.target.files[0]) restoreBackup(e.target.files[0]);
-        e.target.value = "";
-    });
-}
-
-const resetTermBtn = document.getElementById("resetTermBtn");
-if (resetTermBtn) resetTermBtn.addEventListener("click", resetCurrentTerm);
-
-const resetAllBtn = document.getElementById("resetAllBtn");
-if (resetAllBtn) resetAllBtn.addEventListener("click", resetAllData);
-
-const themeToggle = document.getElementById("themeToggle");
-if (themeToggle) {
-    themeToggle.addEventListener("click", toggleTheme);
-}
-
-const configureCloudBtn = document.getElementById("configureCloudBtn");
-if (configureCloudBtn) {
-    configureCloudBtn.addEventListener("click", configureCloud);
-}
-
-const resetCloudBtn = document.getElementById("resetCloudBtn");
-if (resetCloudBtn) {
-    resetCloudBtn.addEventListener("click", resetToDefaultCloud);
-}
-
-const syncToCloudBtn = document.getElementById("syncToCloudBtn");
-if (syncToCloudBtn) {
-    syncToCloudBtn.addEventListener("click", manualCloudSync);
-}
-
-const loadFromCloudBtn = document.getElementById("loadFromCloudBtn");
-if (loadFromCloudBtn) {
-    loadFromCloudBtn.addEventListener("click", manualLoadFromCloud);
+    document.getElementById("mainApp").style.display = "none";
+    document.getElementById("loginPanel").style.display = "flex";
+    document.getElementById("loginUsername").value = "";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginError").innerHTML = "";
 }
 
 function initTabs() {
     const tabs = document.querySelectorAll(".tab-btn");
-    
     tabs.forEach(btn => {
         btn.addEventListener("click", function() {
             if (!isLoggedIn) return;
             const tabId = this.getAttribute("data-tab");
-            
             tabs.forEach(b => b.classList.remove("active"));
             this.classList.add("active");
-            
-            document.querySelectorAll(".tab-content").forEach(content => {
-                content.classList.remove("active");
-            });
-            
-            const targetContent = document.getElementById(tabId + "Tab");
-            if (targetContent) {
-                targetContent.classList.add("active");
-            }
-            
+            document.querySelectorAll(".tab-content").forEach(content => content.classList.remove("active"));
+            const target = document.getElementById(tabId + "Tab");
+            if (target) target.classList.add("active");
             if (tabId === "analytics") updateAnalytics();
             if (tabId === "reports") updateReportStudentSelect();
             if (tabId === "attendance") renderAttendance();
         });
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("mainApp").style.display = "none";
+    document.getElementById("loginPanel").style.display = "flex";
+    initTheme();
+    initTabs();
+    console.log("TIS LabMaster Ready - Day-by-day attendance enabled");
+});
+
+// Attach event listeners
+document.getElementById("doLoginBtn")?.addEventListener("click", handleLogin);
+document.getElementById("logoutBtn")?.addEventListener("click", handleLogout);
+document.getElementById("loginPassword")?.addEventListener("keypress", e => { if(e.key==="Enter") handleLogin(); });
+document.getElementById("loginUsername")?.addEventListener("keypress", e => { if(e.key==="Enter") handleLogin(); });
+document.getElementById("termSelector")?.addEventListener("change", e => { currentTerm = e.target.value; renderMarklist(); renderAttendance(); updateAnalytics(); updateReportStudentSelect(); });
+document.getElementById("searchInput")?.addEventListener("input", e => { searchTerm = e.target.value; renderMarklist(); renderAttendance(); });
+document.getElementById("refreshMarksBtn")?.addEventListener("click", () => { renderMarklist(); updateAnalytics(); });
+document.getElementById("addStudentBtn")?.addEventListener("click", addStudent);
+document.getElementById("markAllPresentBtn")?.addEventListener("click", markAllPresent);
+document.getElementById("markAllAbsentBtn")?.addEventListener("click", markAllAbsent);
+document.getElementById("saveAttendanceBtn")?.addEventListener("click", () => { persistToLocal(); autoSyncToCloud(); alert("Attendance saved!"); });
+document.getElementById("generateReportBtn")?.addEventListener("click", () => { let name = document.getElementById("reportStudentSelect")?.value; if(name) generateReportCard(name); });
+document.getElementById("exportCSVBtn")?.addEventListener("click", exportAllCSV);
+document.getElementById("downloadBackupBtn")?.addEventListener("click", downloadBackup);
+document.getElementById("restoreBackupBtn")?.addEventListener("click", () => document.getElementById("restoreFileInput").click());
+document.getElementById("restoreFileInput")?.addEventListener("change", e => { if(e.target.files[0]) restoreBackup(e.target.files[0]); e.target.value=""; });
+document.getElementById("resetTermBtn")?.addEventListener("click", resetCurrentTerm);
+document.getElementById("resetAllBtn")?.addEventListener("click", resetAllData);
+document.getElementById("themeToggle")?.addEventListener("click", toggleTheme);
+document.getElementById("configureCloudBtn")?.addEventListener("click", configureCloud);
+document.getElementById("resetCloudBtn")?.addEventListener("click", resetToDefaultCloud);
+document.getElementById("syncToCloudBtn")?.addEventListener("click", manualCloudSync);
+document.getElementById("loadFromCloudBtn")?.addEventListener("click", manualLoadFromCloud);
+document.getElementById("uploadExcelBtn")?.addEventListener("click", uploadExcel);
+document.getElementById("resetGrade8ABtn")?.addEventListener("click", resetGrade8AToDefault);
+
+// Attendance date picker events
+const attendanceDateInput = document.getElementById("attendanceDate");
+const loadAttendanceDateBtn = document.getElementById("loadAttendanceDateBtn");
+if (attendanceDateInput && loadAttendanceDateBtn) {
+    attendanceDateInput.value = getTodayDate();
+    currentAttendanceDate = getTodayDate();
+    loadAttendanceDateBtn.addEventListener("click", () => {
+        currentAttendanceDate = attendanceDateInput.value;
+        renderAttendance();
+        updateAnalytics();
     });
 }

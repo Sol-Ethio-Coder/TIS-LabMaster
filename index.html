@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-    <title>TIS LabMaster </title>
+    <title>TIS LabMaster</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' text-anchor='middle' dy='.35em' font-size='80' fill='%234285f4'>📚</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' text-anchor='middle' dy='.35em' font-size='80' fill='%234285f4'>📚</text></svg>">
@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -73,7 +72,9 @@
             <div class="cloud-buttons">
                 <button id="configureCloudBtn" class="cloud-btn"><i class="fas fa-cloud-upload-alt"></i> Configure Cloud</button>
                 <button id="syncToCloudBtn" class="cloud-btn sync-btn"><i class="fas fa-sync-alt"></i> Sync to Cloud</button>
+                <button id="loadFromCloudBtn" class="cloud-btn"><i class="fas fa-cloud-download-alt"></i> Load from Cloud</button>
                 <button id="resetCloudBtn" class="icon-btn" style="background: #ff9800;"><i class="fas fa-undo"></i> Reset Default</button>
+                <span id="syncIndicator" style="font-size: 12px; margin-left: 10px;"></span>
             </div>
         </div>
 
@@ -118,11 +119,22 @@
             </div>
         </div>
 
-        <!-- ATTENDANCE TAB -->
+        <!-- ATTENDANCE TAB with Date Picker -->
         <div id="attendanceTab" class="tab-content">
             <div class="glass-card">
                 <div class="attendance-header">
                     <h3><i class="fas fa-calendar-check"></i> 📋 Lab Attendance Tracker</h3>
+                    <!-- Date Picker for Day-by-Day Attendance -->
+                    <div class="date-picker-area" style="display: flex; gap: 10px; align-items: center; margin: 15px 0; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 40px;">
+                            <i class="fas fa-calendar-day" style="color: #a5f3fc;"></i>
+                            <input type="date" id="attendanceDate" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 20px;">
+                            <button id="loadAttendanceDateBtn" class="icon-btn" style="background: #4caf50;"><i class="fas fa-calendar-check"></i> Load</button>
+                        </div>
+                        <div style="font-size: 12px; color: #a5f3fc;">
+                            <i class="fas fa-info-circle"></i> Select a date to view/edit attendance history
+                        </div>
+                    </div>
                     <div class="attendance-stats" id="attendanceStats">
                         <div class="stat-chip"><i class="fas fa-users"></i> Total: <span id="totalStudents">0</span></div>
                         <div class="stat-chip present-chip"><i class="fas fa-check-circle"></i> Present: <span id="presentCount">0</span></div>
@@ -191,17 +203,21 @@
             </div>
         </div>
 
-        <!-- ADMIN TAB -->
+        <!-- ADMIN TAB - Excel Upload Removed -->
         <div id="adminTab" class="tab-content">
             <div class="glass-card">
                 <h3><i class="fas fa-crown"></i> Admin Controls</h3>
                 <div class="admin-buttons">
+                    <button id="resetGrade8ABtn" class="icon-btn" style="background: #ef4444;"><i class="fas fa-undo-alt"></i> Reset Grade 8A to Default</button>
                     <button id="resetTermBtn" class="icon-btn"><i class="fas fa-database"></i> Reset Current Term</button>
                     <button id="resetAllBtn" class="icon-btn"><i class="fas fa-trash-alt"></i> Reset ALL Data</button>
                 </div>
                 <div class="storage-info">
                     <i class="fas fa-database"></i> <strong>Local Storage:</strong> Active<br>
                     <i class="fas fa-cloud-upload-alt"></i> <strong>Supabase Cloud:</strong> <span id="cloudStorageStatus">Not configured</span>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; font-size: 12px; border-left: 3px solid #10b981;">
+                    <i class="fas fa-check-circle" style="color: #10b981;"></i> <strong>Data Management:</strong> Use the buttons above to manage your data. All changes auto-sync to cloud.
                 </div>
             </div>
         </div>
@@ -215,13 +231,13 @@
         <div class="awesome-footer">
             <div class="footer-content">
                 <p>✨ <strong class="developer-tag">TIS LabMaster</strong> | Developed with <i class="fas fa-heart" style="color:#f87171;"></i> by <strong class="developer-tag">Sol Ethio Coder</strong> ✨</p>
-                <p><i class="fas fa-database"></i> Local Storage | <i class="fas fa-chart-line"></i> Analytics | <i class="fas fa-print"></i> Report Cards | <i class="fas fa-cloud-upload-alt"></i> Supabase Cloud</p>
+                <p><i class="fas fa-database"></i> Local Storage | <i class="fas fa-chart-line"></i> Analytics | <i class="fas fa-print"></i> Report Cards | <i class="fas fa-cloud-upload-alt"></i> Supabase Cloud | <i class="fas fa-calendar-day"></i> Daily Attendance</p>
                 <div class="social-icons">
                     <a href="https://github.com/Sol-Ethio-Coder"><i class="fab fa-github"></i></a>
                     <a href="mailto: solash5156@gmail.com"><i class="fas fa-envelope"></i></a>
                     <a href="https://www.linkedin.com/in/Sol-Ethio-Coder/"><i class="fab fa-linkedin"></i></a>
                 </div>
-                <p style="font-size:0.7rem;">© 2026 TIS | Auto-saves to Supabase cloud | Fully Responsive</p>
+                <p style="font-size:0.7rem;">© 2026 TIS | Auto-saves to Supabase cloud | Day-by-day attendance tracking | Fully Responsive</p>
             </div>
         </div>
     </div>

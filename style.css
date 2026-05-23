@@ -396,6 +396,7 @@ body.light-mode {
 .cloud-buttons {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .cloud-btn {
@@ -420,6 +421,90 @@ body.light-mode {
 
 .sync-btn {
     background: var(--accent-success);
+}
+
+/* Date Picker Styles */
+.date-picker-area {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin: 15px 0;
+    flex-wrap: wrap;
+    padding: 12px;
+    background: var(--stat-bg);
+    border-radius: 60px;
+    border: 1px solid var(--border-color);
+}
+
+.date-picker-area input[type="date"] {
+    background: var(--input-bg);
+    border: 2px solid var(--input-border);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 40px;
+    font-family: 'Inter', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.date-picker-area input[type="date"]:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+    transform: translateY(-2px);
+}
+
+.date-picker-area input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+}
+
+body.light-mode .date-picker-area input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.2);
+}
+
+.date-picker-area .icon-btn {
+    background: var(--accent-success);
+    color: white;
+    border: none;
+}
+
+.date-picker-area .icon-btn:hover {
+    background: var(--accent-primary);
+}
+
+/* Excel Info Box */
+.excel-info {
+    margin-top: 15px;
+    padding: 12px 16px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 16px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    border-left: 4px solid var(--accent-success);
+    line-height: 1.5;
+}
+
+.excel-info i {
+    color: var(--accent-success);
+    margin-right: 8px;
+}
+
+.excel-info strong {
+    color: var(--accent-success);
+}
+
+/* Sync Indicator */
+#syncIndicator {
+    font-size: 12px;
+    margin-left: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#syncIndicator i {
+    font-size: 12px;
 }
 
 /* Selection Area */
@@ -1228,6 +1313,16 @@ body.light-mode .icon-btn:hover {
     .score-input {
         width: 55px;
     }
+
+    .date-picker-area {
+        flex-direction: column;
+        align-items: stretch;
+        border-radius: 24px;
+    }
+
+    .date-picker-area input[type="date"] {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1243,11 +1338,12 @@ body.light-mode .icon-btn:hover {
         padding: 12px;
     }
 }
+
 /* Fix for Local Backup section margins */
 .local-backup-section {
     margin: 20px 0;
     padding: 15px;
-    background: var(--card-bg);
+    background: var(--bg-secondary);
     border-radius: 12px;
 }
 
@@ -1293,6 +1389,7 @@ body.light-mode .icon-btn:hover {
 .backup-container button {
     margin: 0;
 }
+
 /* Attendance Summary Stats - Visible on both themes */
 .analytics-grid .stat-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1360,4 +1457,30 @@ body.light-mode .analytics-grid .stat-card p {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--stat-bg);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-secondary);
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
 }
