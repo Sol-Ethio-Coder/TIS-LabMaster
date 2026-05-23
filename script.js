@@ -17,92 +17,92 @@ const VALID_CREDS = { admin: "admin123", teacher: "teacher" };
 let currentUser = null;
 let isLoggedIn = false;
 
-// ==================== CLASSES & WEIGHTS (Based on your format) ====================
+// ==================== CLASSES & WEIGHTS (Normalized to sum to 70%) ====================
 const CLASSES = [
     { 
         id: "grade8A", 
         display: "Grade Eight A", 
         components: [
-            { name: "Practical 1", weight: 0.30 },
-            { name: "Exam", weight: 0.20 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Participation", weight: 0.05 },
-            { name: "Assign 1", weight: 0.05 },
-            { name: "Assign 2", weight: 0.05 },
-            { name: "Practical 2", weight: 0.40 }
+            { name: "Practical 1", weight: 0.191 },   // 19.1% (was 30%)
+            { name: "Exam", weight: 0.127 },          // 12.7% (was 20%)
+            { name: "Exercise Book", weight: 0.032 }, // 3.2% (was 5%)
+            { name: "Participation", weight: 0.032 }, // 3.2% (was 5%)
+            { name: "Assign 1", weight: 0.032 },      // 3.2% (was 5%)
+            { name: "Assign 2", weight: 0.032 },      // 3.2% (was 5%)
+            { name: "Practical 2", weight: 0.254 }    // 25.4% (was 40%)
         ]
     },
     { 
         id: "grade8B", 
         display: "Grade Eight B", 
         components: [
-            { name: "Practical 1", weight: 0.30 },
-            { name: "Exam", weight: 0.20 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Participation", weight: 0.05 },
-            { name: "Assign 1", weight: 0.05 },
-            { name: "Assign 2", weight: 0.05 },
-            { name: "Practical 2", weight: 0.40 }
+            { name: "Practical 1", weight: 0.191 },
+            { name: "Exam", weight: 0.127 },
+            { name: "Exercise Book", weight: 0.032 },
+            { name: "Participation", weight: 0.032 },
+            { name: "Assign 1", weight: 0.032 },
+            { name: "Assign 2", weight: 0.032 },
+            { name: "Practical 2", weight: 0.254 }
         ]
     },
     { 
         id: "grade9A", 
         display: "Grade Nine A", 
         components: [
-            { name: "Project 1", weight: 0.30 },
-            { name: "Project", weight: 0.25 },
-            { name: "Quiz", weight: 0.05 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Participation", weight: 0.05 },
-            { name: "Practical 2", weight: 0.40 }
+            { name: "Project 1", weight: 0.233 },   // 23.3% (was 30%)
+            { name: "Project", weight: 0.194 },     // 19.4% (was 25%)
+            { name: "Quiz", weight: 0.039 },        // 3.9% (was 5%)
+            { name: "Exercise Book", weight: 0.039 }, // 3.9% (was 5%)
+            { name: "Participation", weight: 0.039 }, // 3.9% (was 5%)
+            { name: "Practical 2", weight: 0.310 }    // 31.0% (was 40%)
         ]
     },
     { 
         id: "grade9B", 
         display: "Grade Nine B", 
         components: [
-            { name: "Project 1", weight: 0.30 },
-            { name: "Project", weight: 0.25 },
-            { name: "Quiz", weight: 0.05 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Participation", weight: 0.05 },
-            { name: "Practice 2", weight: 0.40 }
+            { name: "Project 1", weight: 0.233 },
+            { name: "Project", weight: 0.194 },
+            { name: "Quiz", weight: 0.039 },
+            { name: "Exercise Book", weight: 0.039 },
+            { name: "Participation", weight: 0.039 },
+            { name: "Practice 2", weight: 0.310 }
         ]
     },
     { 
         id: "grade10A", 
         display: "Grade Ten A", 
         components: [
-            { name: "Practical 1", weight: 0.30 },
-            { name: "Project", weight: 0.15 },
-            { name: "Quiz", weight: 0.05 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Participation", weight: 0.05 },
-            { name: "Assignment", weight: 0.10 },
-            { name: "Practical 2", weight: 0.40 }
+            { name: "Practical 1", weight: 0.180 },   // 18.0% (was 30%)
+            { name: "Project", weight: 0.090 },       // 9.0% (was 15%)
+            { name: "Quiz", weight: 0.030 },          // 3.0% (was 5%)
+            { name: "Exercise Book", weight: 0.030 }, // 3.0% (was 5%)
+            { name: "Participation", weight: 0.030 }, // 3.0% (was 5%)
+            { name: "Assignment", weight: 0.060 },    // 6.0% (was 10%)
+            { name: "Practical 2", weight: 0.240 }    // 24.0% (was 40%)
         ]
     },
     { 
         id: "grade11A", 
         display: "Grade Eleven A", 
         components: [
-            { name: "Practical 1", weight: 0.30 },
-            { name: "Mid-Exam", weight: 0.20 },
-            { name: "Assignment", weight: 0.10 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Participation", weight: 0.05 },
-            { name: "Practical 2", weight: 0.40 }
+            { name: "Practical 1", weight: 0.191 },
+            { name: "Mid-Exam", weight: 0.127 },
+            { name: "Assignment", weight: 0.064 },
+            { name: "Exercise Book", weight: 0.032 },
+            { name: "Participation", weight: 0.032 },
+            { name: "Practical 2", weight: 0.254 }
         ]
     },
     { 
         id: "grade12A", 
         display: "Grade Twelve A", 
         components: [
-            { name: "Practical 1", weight: 0.30 },
-            { name: "Mid-Exam", weight: 0.20 },
-            { name: "Exercise Book", weight: 0.05 },
-            { name: "Assignment", weight: 0.15 },
-            { name: "Practical 2", weight: 0.40 }
+            { name: "Practical 1", weight: 0.233 },   // 23.3% (was 30%)
+            { name: "Mid-Exam", weight: 0.155 },      // 15.5% (was 20%)
+            { name: "Exercise Book", weight: 0.039 }, // 3.9% (was 5%)
+            { name: "Assignment", weight: 0.117 },    // 11.7% (was 15%)
+            { name: "Practical 2", weight: 0.310 }    // 31.0% (was 40%)
         ]
     }
 ];
@@ -389,20 +389,21 @@ function renderMarklistHeader() {
     // Show component badges with weights
     let courseworkTotal = 0;
     cls.components.forEach(comp => {
-        let weightPercent = (comp.weight * 100).toFixed(0);
-        courseworkTotal += comp.weight * 70;
+        let weightPercent = (comp.weight * 100).toFixed(1);
+        courseworkTotal += comp.weight * 100;
         let span = document.createElement("span");
         span.className = "weight-badge";
         span.innerHTML = `${comp.name} <strong>${weightPercent}%</strong>`;
         weightsContainer.appendChild(span);
     });
     
-    // Add total coursework badge
+    // Add total coursework badge (should be 70% for all classes)
+    let totalCourseworkPercent = (courseworkTotal).toFixed(1);
     let courseworkSpan = document.createElement("span");
     courseworkSpan.className = "weight-badge";
     courseworkSpan.style.background = "#2196f3";
     courseworkSpan.style.color = "white";
-    courseworkSpan.innerHTML = `Total Coursework <strong>${courseworkTotal.toFixed(0)}%</strong>`;
+    courseworkSpan.innerHTML = `Total Coursework <strong>${totalCourseworkPercent}%</strong>`;
     weightsContainer.appendChild(courseworkSpan);
     
     // Add final exam badge
@@ -426,7 +427,7 @@ function renderMarklistHeader() {
     let headerRow = document.createElement("tr");
     headerRow.innerHTML = `<th>#</th><th onclick="sortByColumn('name')">Student Name ⬍</th><th>Gender</th>`;
     cls.components.forEach(comp => { 
-        let weightPercent = (comp.weight * 100).toFixed(0);
+        let weightPercent = (comp.weight * 100).toFixed(1);
         headerRow.innerHTML += `<th>${comp.name}<br><small>${weightPercent}%</small></th>`; 
     });
     headerRow.innerHTML += `<th>Final Exam<br><small>${FINAL_EXAM_WEIGHT * 100}% (0-${FINAL_EXAM_MAX})</small></th><th onclick="sortByColumn('finalTotal')">Final Total<br><small>100%</small> ⬍</th><th>Status</th>`;
@@ -660,7 +661,7 @@ function generateReportCard(studentName) {
             </tr>`;
         }
     }
-    content.innerHTML = `<div class="report-card-print"><div class="header"><h2>TIS LabMaster</h2><h3>Student Report Card</h3><p>${studentName}</p><p>${new Date().toLocaleString()}</p></div><table border="1"><thead><tr style="background:#667eea;color:white"><th>Term</th><th>Final Total (%)</th><th>Final Exam</th><th>Status</th></tr></thead><tbody>${termsHtml}</tbody></tr><button class="print-btn" onclick="window.print()">🖨️ Print</button><button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">Close</button></div>`;
+    content.innerHTML = `<div class="report-card-print"><div class="header"><h2>TIS LabMaster</h2><h3>Student Report Card</h3><p>${studentName}</p><p>${new Date().toLocaleString()}</p></div><table border="1"><thead><tr style="background:#667eea;color:white"><th>Term</th><th>Final Total (%)</th><th>Final Exam</th><th>Status</th></tr></thead><tbody>${termsHtml}</tbody></table><button class="print-btn" onclick="window.print()">🖨️ Print</button><button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">Close</button></div>`;
     modal.style.display = "flex";
 }
 
@@ -870,7 +871,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginPanel").style.display = "flex";
     initTheme();
     initTabs();
-    console.log("TIS LabMaster Ready - Weighted grading system enabled");
+    console.log("TIS LabMaster Ready - Weighted grading system (Coursework 70% + Final Exam 30%)");
 });
 
 // Event Listeners
