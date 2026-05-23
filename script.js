@@ -18,92 +18,101 @@ let currentUser = null;
 let isLoggedIn = false;
 
 // ==================== CLASSES & COMPONENTS ====================
-// Each class has components with their weights toward coursework (70%)
-// Final Exam is separate (30%)
 const CLASSES = [
     { 
         id: "grade8A", display: "Grade Eight A", 
-        components: [
-            { name: "Practical 1", weight: 30, maxScore: 100 },
-            { name: "Exam", weight: 20, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Assign 1", weight: 5, maxScore: 100 },
-            { name: "Assign 2", weight: 5, maxScore: 100 },
-            { name: "Participation", weight: 5, maxScore: 100 },
-            { name: "Practical 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Practical 1", "Exam", "Exercise Book", "Participation", "Assign 1", "Assign 2", "Practical 2"]
     },
     { 
         id: "grade8B", display: "Grade Eight B", 
-        components: [
-            { name: "Practical 1", weight: 30, maxScore: 100 },
-            { name: "Exam", weight: 20, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Assign 1", weight: 5, maxScore: 100 },
-            { name: "Assign 2", weight: 5, maxScore: 100 },
-            { name: "Participation", weight: 5, maxScore: 100 },
-            { name: "Practical 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Practical 1", "Exam", "Exercise Book", "Participation", "Assign 1", "Assign 2", "Practical 2"]
     },
     { 
         id: "grade9A", display: "Grade Nine A", 
-        components: [
-            { name: "Project 1", weight: 30, maxScore: 100 },
-            { name: "Project", weight: 25, maxScore: 100 },
-            { name: "Quiz", weight: 5, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Participation", weight: 5, maxScore: 100 },
-            { name: "Practical 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Project 1", "Project", "Quiz", "Exercise Book", "Participation", "Practical 2"]
     },
     { 
         id: "grade9B", display: "Grade Nine B", 
-        components: [
-            { name: "Project 1", weight: 30, maxScore: 100 },
-            { name: "Project", weight: 25, maxScore: 100 },
-            { name: "Quiz", weight: 5, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Participation", weight: 5, maxScore: 100 },
-            { name: "Practice 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Project 1", "Project", "Quiz", "Exercise Book", "Participation", "Practice 2"]
     },
     { 
         id: "grade10A", display: "Grade Ten A", 
-        components: [
-            { name: "Practical 1", weight: 30, maxScore: 100 },
-            { name: "Project", weight: 15, maxScore: 100 },
-            { name: "Quiz", weight: 5, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Participation", weight: 5, maxScore: 100 },
-            { name: "Assignment", weight: 10, maxScore: 100 },
-            { name: "Practical 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Practical 1", "Project", "Quiz", "Exercise Book", "Participation", "Assignment", "Practical 2"]
     },
     { 
         id: "grade11A", display: "Grade Eleven A", 
-        components: [
-            { name: "Practical 1", weight: 30, maxScore: 100 },
-            { name: "Mid-Exam", weight: 20, maxScore: 100 },
-            { name: "Assignment", weight: 10, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Participation", weight: 5, maxScore: 100 },
-            { name: "Practical 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Practical 1", "Mid-Exam", "Assignment", "Exercise Book", "Participation", "Practical 2"]
     },
     { 
         id: "grade12A", display: "Grade Twelve A", 
-        components: [
-            { name: "Practical 1", weight: 30, maxScore: 100 },
-            { name: "Mid-Exam", weight: 20, maxScore: 100 },
-            { name: "Exercise Book", weight: 5, maxScore: 100 },
-            { name: "Assignment", weight: 15, maxScore: 100 },
-            { name: "Practical 2", weight: 40, maxScore: 100 }
-        ]
+        components: ["Practical 1", "Mid-Exam", "Exercise Book", "Assignment", "Practical 2"]
     }
 ];
 
-const FINAL_EXAM_WEIGHT = 30;
 const FINAL_EXAM_MAX = 30;
+const FINAL_EXAM_WEIGHT = 30;
+
+// Component weights for each class
+const CLASS_WEIGHTS = {
+    grade8A: {
+        "Practical 1": 30,
+        "Exam": 20,
+        "Exercise Book": 5,
+        "Participation": 5,
+        "Assign 1": 5,
+        "Assign 2": 5,
+        "Practical 2": 40
+    },
+    grade8B: {
+        "Practical 1": 30,
+        "Exam": 20,
+        "Exercise Book": 5,
+        "Participation": 5,
+        "Assign 1": 5,
+        "Assign 2": 5,
+        "Practical 2": 40
+    },
+    grade9A: {
+        "Project 1": 30,
+        "Project": 25,
+        "Quiz": 5,
+        "Exercise Book": 5,
+        "Participation": 5,
+        "Practical 2": 40
+    },
+    grade9B: {
+        "Project 1": 30,
+        "Project": 25,
+        "Quiz": 5,
+        "Exercise Book": 5,
+        "Participation": 5,
+        "Practice 2": 40
+    },
+    grade10A: {
+        "Practical 1": 30,
+        "Project": 15,
+        "Quiz": 5,
+        "Exercise Book": 5,
+        "Participation": 5,
+        "Assignment": 10,
+        "Practical 2": 40
+    },
+    grade11A: {
+        "Practical 1": 30,
+        "Mid-Exam": 20,
+        "Assignment": 10,
+        "Exercise Book": 5,
+        "Participation": 5,
+        "Practical 2": 40
+    },
+    grade12A: {
+        "Practical 1": 30,
+        "Mid-Exam": 20,
+        "Exercise Book": 5,
+        "Assignment": 15,
+        "Practical 2": 40
+    }
+};
 
 const rawStudentData = {
     grade8A: ["Amen Addisu","Arsemawit Mhireteab","Arsonia Tadesse","Aymen Abdulaziz","Biruk Abiy","Bisrat Aydefer","Christian Yohannes","Diamond G|Egziahber","Eldaah Zacharias","Eldana Tewodros","Eman Yusuf","Emanda Girma","Eyobed Wossen","Eyosias Yirga","Inam Miraj","Makbel Tekle","Maraki Anteneh","Marken Mesay","Mathias Yohannes","Nahom Abiy","Naomi Tekle","Naomi Daniel","Noah Mohammed","Nobel Addisalem","Rajan Dirriba","Rani Mayur","Rediet Getu","Reyan Abduljelil","Soliyana Alemayehu","Tsinat Abiy","Yafet Alexander","Yohannes Tefera"],
@@ -138,33 +147,25 @@ function getStatusFromTotal(finalTotal) {
     return { text: "❌ Needs Improvement", class: "status-fail" };
 }
 
-// Compute final total: Practical 1 (30%) + Practical 2 (40%) + Final Exam (30%) = 100%
+// Compute final total based on the mark scheme
 function computeFinalTotal(componentScores, finalExamScore, classId) {
+    let weights = CLASS_WEIGHTS[classId];
+    if (!weights) return 0;
+    
     let cls = CLASSES.find(c => c.id === classId);
     if (!cls) return 0;
     
-    // Find Practical 1 and Practical 2 components
-    let practical1Score = 0;
-    let practical2Score = 0;
-    
+    // Calculate coursework total (sum of all weighted components) - max 70%
+    let courseworkTotal = 0;
     for (let comp of cls.components) {
-        let score = parseFloat(componentScores[comp.name]);
+        let score = parseFloat(componentScores[comp]);
         if (!isNaN(score) && score !== "") {
-            if (comp.name === "Practical 1") {
-                practical1Score = score;
-            } else if (comp.name === "Practical 2" || comp.name === "Practice 2") {
-                practical2Score = score;
-            }
+            let weight = weights[comp] || 0;
+            courseworkTotal += (score / 100) * weight;
         }
     }
     
-    // Calculate weighted contribution from Practical 1 (30% of final)
-    let practical1Contribution = (practical1Score / 100) * 30;
-    
-    // Calculate weighted contribution from Practical 2 (40% of final)
-    let practical2Contribution = (practical2Score / 100) * 40;
-    
-    // Calculate exam contribution (out of 30, converted to 30% of final)
+    // Calculate exam contribution (out of 30, converted to 30% of final grade)
     let examVal = parseFloat(finalExamScore);
     let examContribution = 0;
     if (!isNaN(examVal) && examVal !== "") {
@@ -172,21 +173,9 @@ function computeFinalTotal(componentScores, finalExamScore, classId) {
     }
     
     // Final total out of 100
-    let finalTotal = practical1Contribution + practical2Contribution + examContribution;
+    let finalTotal = courseworkTotal + examContribution;
     
     return Math.min(100, Math.max(0, finalTotal));
-}
-
-// Calculate coursework total (sum of all weighted components except Practical 1 & 2? No - show all)
-function calculateCourseworkTotal(componentScores, cls) {
-    let total = 0;
-    for (let comp of cls.components) {
-        let score = parseFloat(componentScores[comp.name]);
-        if (!isNaN(score) && score !== "") {
-            total += (score / 100) * comp.weight;
-        }
-    }
-    return total;
 }
 
 // ==================== LOCAL STORAGE FUNCTIONS ====================
@@ -210,7 +199,7 @@ function initTermData(term, classId) {
     let students = studentNames.map((name, idx) => {
         let gender = (idx % 2 === 0 ? "F" : "M");
         let componentScores = {};
-        cls.components.forEach(comp => { componentScores[comp.name] = ""; });
+        cls.components.forEach(comp => { componentScores[comp] = ""; });
         return { name, gender, componentScores, finalExamScore: "", finalTotal: 0 };
     });
     let attendance = {};
@@ -244,8 +233,9 @@ function ensureDataExists() {
     ["term1", "term2", "term3"].forEach(t => {
         if (!schoolData[t]) schoolData[t] = {};
         CLASSES.forEach(cls => {
-            if (!schoolData[t][cls.id]) initTermData(t, cls.id);
-            else {
+            if (!schoolData[t][cls.id]) {
+                initTermData(t, cls.id);
+            } else {
                 migrateAttendance(t, cls.id);
             }
         });
@@ -401,7 +391,9 @@ function toggleTheme() { document.body.classList.toggle("light-mode"); localStor
 // ==================== UI RENDER ====================
 function renderMarklistHeader() {
     let cls = CLASSES.find(c => c.id === currentClassId);
-    if (!cls) return;
+    let weights = CLASS_WEIGHTS[currentClassId];
+    if (!cls || !weights) return;
+    
     document.getElementById("gradeNameDisplay").innerHTML = cls.display;
     let weightsContainer = document.getElementById("weightsContainer");
     weightsContainer.innerHTML = "";
@@ -410,7 +402,7 @@ function renderMarklistHeader() {
     cls.components.forEach(comp => {
         let span = document.createElement("span");
         span.className = "weight-badge";
-        span.innerHTML = `${comp.name} <strong>${comp.weight}%</strong>`;
+        span.innerHTML = `${comp} <strong>${weights[comp]}%</strong>`;
         weightsContainer.appendChild(span);
     });
     
@@ -442,7 +434,7 @@ function renderMarklistHeader() {
     thead.innerHTML = "";
     let headerRow = document.createElement("tr");
     headerRow.innerHTML = `<th>#</th><th onclick="sortByColumn('name')">Student Name ⬍</th><th>Gender</th>`;
-    cls.components.forEach(comp => { headerRow.innerHTML += `<th>${comp.name}<br><small>(${comp.weight}%)</small></th>`; });
+    cls.components.forEach(comp => { headerRow.innerHTML += `<th>${comp}<br><small>(${weights[comp]}%)</small></th>`; });
     headerRow.innerHTML += `<th>Final Exam<br><small>(${FINAL_EXAM_WEIGHT}%)<br>0-${FINAL_EXAM_MAX}</small></th><th onclick="sortByColumn('finalTotal')">Final Total<br><small>100%</small> ⬍</th><th>Status</th>`;
     thead.appendChild(headerRow);
 }
@@ -481,14 +473,14 @@ function renderMarklist() {
             let cell = row.insertCell();
             let inp = document.createElement("input");
             inp.type = "number";
-            inp.value = student.componentScores[comp.name] || "";
+            inp.value = student.componentScores[comp] || "";
             inp.placeholder = "0-100";
             inp.min = 0;
             inp.max = 100;
             inp.classList.add("score-input");
             inp.onchange = async (e) => {
                 let val = e.target.value === "" ? "" : Math.min(100, Math.max(0, parseFloat(e.target.value)||0));
-                student.componentScores[comp.name] = val;
+                student.componentScores[comp] = val;
                 student.finalTotal = computeFinalTotal(student.componentScores, student.finalExamScore, currentClassId);
                 persistToLocal();
                 renderMarklist();
@@ -649,7 +641,7 @@ function addStudent() {
     let data = schoolData[currentTerm][currentClassId];
     let cls = CLASSES.find(c=>c.id===currentClassId);
     let componentScores = {};
-    cls.components.forEach(c => componentScores[c.name] = "");
+    cls.components.forEach(c => componentScores[c] = "");
     data.students.push({name,gender,componentScores,finalExamScore:"",finalTotal:0});
     data.attendance[currentAttendanceDate] = data.attendance[currentAttendanceDate] || {};
     data.attendance[currentAttendanceDate][name] = { status: "absent", lastUpdated: new Date().toISOString() };
@@ -862,8 +854,11 @@ function handleLogin() {
     if ((username === "admin" && password === "admin123") || (username === "teacher" && password === "teacher")) {
         currentUser = username;
         isLoggedIn = true;
-        if (!loadData()) initAllTerms();
-        else ensureDataExists();
+        if (!loadData()) {
+            initAllTerms();
+        } else {
+            ensureDataExists();
+        }
         document.getElementById("loginPanel").style.display = "none";
         const mainApp = document.getElementById("mainApp");
         mainApp.style.display = "block";
@@ -931,7 +926,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginPanel").style.display = "flex";
     initTheme();
     initTabs();
-    console.log("TIS LabMaster Ready - Final Total = Practical 1 (30%) + Practical 2 (40%) + Final Exam (30%)");
+    console.log("TIS LabMaster Ready - Mark scheme applied correctly");
 });
 
 // Event Listeners
