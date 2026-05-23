@@ -19,5 +19,3 @@ A comprehensive attendance and grade management system for teachers with Supabas
 - JavaScript (ES6+)
 - Supabase (Cloud storage)
 - Font Awesome Icons
-
-## Setup Instructions
