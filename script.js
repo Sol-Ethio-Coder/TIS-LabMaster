@@ -17,98 +17,93 @@ const VALID_CREDS = { admin: "admin123", teacher: "teacher" };
 let currentUser = null;
 let isLoggedIn = false;
 
-// ==================== CLASSES & WEIGHTS (Normalized to sum to 70%) ====================
+// ==================== CLASSES & COMPONENTS ====================
+// Each class has components with their weights toward coursework (70%)
+// Final Exam is separate (30%)
 const CLASSES = [
     { 
-        id: "grade8A", 
-        display: "Grade Eight A", 
+        id: "grade8A", display: "Grade Eight A", 
         components: [
-            { name: "Practical 1", weight: 0.191 },   // 19.1% (was 30%)
-            { name: "Exam", weight: 0.127 },          // 12.7% (was 20%)
-            { name: "Exercise Book", weight: 0.032 }, // 3.2% (was 5%)
-            { name: "Participation", weight: 0.032 }, // 3.2% (was 5%)
-            { name: "Assign 1", weight: 0.032 },      // 3.2% (was 5%)
-            { name: "Assign 2", weight: 0.032 },      // 3.2% (was 5%)
-            { name: "Practical 2", weight: 0.254 }    // 25.4% (was 40%)
+            { name: "Practical 1", weight: 30, maxScore: 100 },
+            { name: "Exam", weight: 20, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Assign 1", weight: 5, maxScore: 100 },
+            { name: "Assign 2", weight: 5, maxScore: 100 },
+            { name: "Participation", weight: 5, maxScore: 100 },
+            { name: "Practical 2", weight: 40, maxScore: 100 }
         ]
     },
     { 
-        id: "grade8B", 
-        display: "Grade Eight B", 
+        id: "grade8B", display: "Grade Eight B", 
         components: [
-            { name: "Practical 1", weight: 0.191 },
-            { name: "Exam", weight: 0.127 },
-            { name: "Exercise Book", weight: 0.032 },
-            { name: "Participation", weight: 0.032 },
-            { name: "Assign 1", weight: 0.032 },
-            { name: "Assign 2", weight: 0.032 },
-            { name: "Practical 2", weight: 0.254 }
+            { name: "Practical 1", weight: 30, maxScore: 100 },
+            { name: "Exam", weight: 20, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Assign 1", weight: 5, maxScore: 100 },
+            { name: "Assign 2", weight: 5, maxScore: 100 },
+            { name: "Participation", weight: 5, maxScore: 100 },
+            { name: "Practical 2", weight: 40, maxScore: 100 }
         ]
     },
     { 
-        id: "grade9A", 
-        display: "Grade Nine A", 
+        id: "grade9A", display: "Grade Nine A", 
         components: [
-            { name: "Project 1", weight: 0.233 },   // 23.3% (was 30%)
-            { name: "Project", weight: 0.194 },     // 19.4% (was 25%)
-            { name: "Quiz", weight: 0.039 },        // 3.9% (was 5%)
-            { name: "Exercise Book", weight: 0.039 }, // 3.9% (was 5%)
-            { name: "Participation", weight: 0.039 }, // 3.9% (was 5%)
-            { name: "Practical 2", weight: 0.310 }    // 31.0% (was 40%)
+            { name: "Project 1", weight: 30, maxScore: 100 },
+            { name: "Project", weight: 25, maxScore: 100 },
+            { name: "Quiz", weight: 5, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Participation", weight: 5, maxScore: 100 },
+            { name: "Practical 2", weight: 40, maxScore: 100 }
         ]
     },
     { 
-        id: "grade9B", 
-        display: "Grade Nine B", 
+        id: "grade9B", display: "Grade Nine B", 
         components: [
-            { name: "Project 1", weight: 0.233 },
-            { name: "Project", weight: 0.194 },
-            { name: "Quiz", weight: 0.039 },
-            { name: "Exercise Book", weight: 0.039 },
-            { name: "Participation", weight: 0.039 },
-            { name: "Practice 2", weight: 0.310 }
+            { name: "Project 1", weight: 30, maxScore: 100 },
+            { name: "Project", weight: 25, maxScore: 100 },
+            { name: "Quiz", weight: 5, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Participation", weight: 5, maxScore: 100 },
+            { name: "Practice 2", weight: 40, maxScore: 100 }
         ]
     },
     { 
-        id: "grade10A", 
-        display: "Grade Ten A", 
+        id: "grade10A", display: "Grade Ten A", 
         components: [
-            { name: "Practical 1", weight: 0.180 },   // 18.0% (was 30%)
-            { name: "Project", weight: 0.090 },       // 9.0% (was 15%)
-            { name: "Quiz", weight: 0.030 },          // 3.0% (was 5%)
-            { name: "Exercise Book", weight: 0.030 }, // 3.0% (was 5%)
-            { name: "Participation", weight: 0.030 }, // 3.0% (was 5%)
-            { name: "Assignment", weight: 0.060 },    // 6.0% (was 10%)
-            { name: "Practical 2", weight: 0.240 }    // 24.0% (was 40%)
+            { name: "Practical 1", weight: 30, maxScore: 100 },
+            { name: "Project", weight: 15, maxScore: 100 },
+            { name: "Quiz", weight: 5, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Participation", weight: 5, maxScore: 100 },
+            { name: "Assignment", weight: 10, maxScore: 100 },
+            { name: "Practical 2", weight: 40, maxScore: 100 }
         ]
     },
     { 
-        id: "grade11A", 
-        display: "Grade Eleven A", 
+        id: "grade11A", display: "Grade Eleven A", 
         components: [
-            { name: "Practical 1", weight: 0.191 },
-            { name: "Mid-Exam", weight: 0.127 },
-            { name: "Assignment", weight: 0.064 },
-            { name: "Exercise Book", weight: 0.032 },
-            { name: "Participation", weight: 0.032 },
-            { name: "Practical 2", weight: 0.254 }
+            { name: "Practical 1", weight: 30, maxScore: 100 },
+            { name: "Mid-Exam", weight: 20, maxScore: 100 },
+            { name: "Assignment", weight: 10, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Participation", weight: 5, maxScore: 100 },
+            { name: "Practical 2", weight: 40, maxScore: 100 }
         ]
     },
     { 
-        id: "grade12A", 
-        display: "Grade Twelve A", 
+        id: "grade12A", display: "Grade Twelve A", 
         components: [
-            { name: "Practical 1", weight: 0.233 },   // 23.3% (was 30%)
-            { name: "Mid-Exam", weight: 0.155 },      // 15.5% (was 20%)
-            { name: "Exercise Book", weight: 0.039 }, // 3.9% (was 5%)
-            { name: "Assignment", weight: 0.117 },    // 11.7% (was 15%)
-            { name: "Practical 2", weight: 0.310 }    // 31.0% (was 40%)
+            { name: "Practical 1", weight: 30, maxScore: 100 },
+            { name: "Mid-Exam", weight: 20, maxScore: 100 },
+            { name: "Exercise Book", weight: 5, maxScore: 100 },
+            { name: "Assignment", weight: 15, maxScore: 100 },
+            { name: "Practical 2", weight: 40, maxScore: 100 }
         ]
     }
 ];
 
-const FINAL_EXAM_WEIGHT = 0.30; // 30%
-const FINAL_EXAM_MAX = 30; // out of 30 points
+const FINAL_EXAM_WEIGHT = 30;
+const FINAL_EXAM_MAX = 30;
 
 const rawStudentData = {
     grade8A: ["Amen Addisu","Arsemawit Mhireteab","Arsonia Tadesse","Aymen Abdulaziz","Biruk Abiy","Bisrat Aydefer","Christian Yohannes","Diamond G|Egziahber","Eldaah Zacharias","Eldana Tewodros","Eman Yusuf","Emanda Girma","Eyobed Wossen","Eyosias Yirga","Inam Miraj","Makbel Tekle","Maraki Anteneh","Marken Mesay","Mathias Yohannes","Nahom Abiy","Naomi Tekle","Naomi Daniel","Noah Mohammed","Nobel Addisalem","Rajan Dirriba","Rani Mayur","Rediet Getu","Reyan Abduljelil","Soliyana Alemayehu","Tsinat Abiy","Yafet Alexander","Yohannes Tefera"],
@@ -143,30 +138,55 @@ function getStatusFromTotal(finalTotal) {
     return { text: "❌ Needs Improvement", class: "status-fail" };
 }
 
-// Compute final total: Coursework (70%) + Final Exam (30%)
+// Compute final total: Practical 1 (30%) + Practical 2 (40%) + Final Exam (30%) = 100%
 function computeFinalTotal(componentScores, finalExamScore, classId) {
     let cls = CLASSES.find(c => c.id === classId);
     if (!cls) return 0;
     
-    // Calculate coursework contribution (sum of weighted components)
-    let courseworkTotal = 0;
+    // Find Practical 1 and Practical 2 components
+    let practical1Score = 0;
+    let practical2Score = 0;
+    
     for (let comp of cls.components) {
         let score = parseFloat(componentScores[comp.name]);
         if (!isNaN(score) && score !== "") {
-            courseworkTotal += (score / 100) * comp.weight * 70;
+            if (comp.name === "Practical 1") {
+                practical1Score = score;
+            } else if (comp.name === "Practical 2" || comp.name === "Practice 2") {
+                practical2Score = score;
+            }
         }
     }
     
-    // Calculate exam contribution (out of 30 points, worth 30% of final grade)
-    let examScore = parseFloat(finalExamScore);
+    // Calculate weighted contribution from Practical 1 (30% of final)
+    let practical1Contribution = (practical1Score / 100) * 30;
+    
+    // Calculate weighted contribution from Practical 2 (40% of final)
+    let practical2Contribution = (practical2Score / 100) * 40;
+    
+    // Calculate exam contribution (out of 30, converted to 30% of final)
+    let examVal = parseFloat(finalExamScore);
     let examContribution = 0;
-    if (!isNaN(examScore) && examScore !== "") {
-        examContribution = (examScore / FINAL_EXAM_MAX) * 30;
+    if (!isNaN(examVal) && examVal !== "") {
+        examContribution = (examVal / FINAL_EXAM_MAX) * FINAL_EXAM_WEIGHT;
     }
     
-    // Final total is out of 100
-    let finalTotal = courseworkTotal + examContribution;
+    // Final total out of 100
+    let finalTotal = practical1Contribution + practical2Contribution + examContribution;
+    
     return Math.min(100, Math.max(0, finalTotal));
+}
+
+// Calculate coursework total (sum of all weighted components except Practical 1 & 2? No - show all)
+function calculateCourseworkTotal(componentScores, cls) {
+    let total = 0;
+    for (let comp of cls.components) {
+        let score = parseFloat(componentScores[comp.name]);
+        if (!isNaN(score) && score !== "") {
+            total += (score / 100) * comp.weight;
+        }
+    }
+    return total;
 }
 
 // ==================== LOCAL STORAGE FUNCTIONS ====================
@@ -387,23 +407,19 @@ function renderMarklistHeader() {
     weightsContainer.innerHTML = "";
     
     // Show component badges with weights
-    let courseworkTotal = 0;
     cls.components.forEach(comp => {
-        let weightPercent = (comp.weight * 100).toFixed(1);
-        courseworkTotal += comp.weight * 100;
         let span = document.createElement("span");
         span.className = "weight-badge";
-        span.innerHTML = `${comp.name} <strong>${weightPercent}%</strong>`;
+        span.innerHTML = `${comp.name} <strong>${comp.weight}%</strong>`;
         weightsContainer.appendChild(span);
     });
     
-    // Add total coursework badge (should be 70% for all classes)
-    let totalCourseworkPercent = (courseworkTotal).toFixed(1);
+    // Add coursework total badge
     let courseworkSpan = document.createElement("span");
     courseworkSpan.className = "weight-badge";
     courseworkSpan.style.background = "#2196f3";
     courseworkSpan.style.color = "white";
-    courseworkSpan.innerHTML = `Total Coursework <strong>${totalCourseworkPercent}%</strong>`;
+    courseworkSpan.innerHTML = `Coursework Total <strong>70%</strong>`;
     weightsContainer.appendChild(courseworkSpan);
     
     // Add final exam badge
@@ -411,26 +427,23 @@ function renderMarklistHeader() {
     examSpan.className = "weight-badge";
     examSpan.style.background = "#ff9800";
     examSpan.style.color = "white";
-    examSpan.innerHTML = `Final Exam <strong>${FINAL_EXAM_WEIGHT * 100}%</strong> (out of ${FINAL_EXAM_MAX})`;
+    examSpan.innerHTML = `Final Exam <strong>${FINAL_EXAM_WEIGHT}%</strong> (out of ${FINAL_EXAM_MAX})`;
     weightsContainer.appendChild(examSpan);
     
-    // Add total badge
+    // Add final total badge
     let totalSpan = document.createElement("span");
     totalSpan.className = "weight-badge";
     totalSpan.style.background = "#4caf50";
     totalSpan.style.color = "white";
-    totalSpan.innerHTML = `Total <strong>100%</strong>`;
+    totalSpan.innerHTML = `Final Total <strong>100%</strong>`;
     weightsContainer.appendChild(totalSpan);
     
     let thead = document.getElementById("marksTableHead");
     thead.innerHTML = "";
     let headerRow = document.createElement("tr");
     headerRow.innerHTML = `<th>#</th><th onclick="sortByColumn('name')">Student Name ⬍</th><th>Gender</th>`;
-    cls.components.forEach(comp => { 
-        let weightPercent = (comp.weight * 100).toFixed(1);
-        headerRow.innerHTML += `<th>${comp.name}<br><small>${weightPercent}%</small></th>`; 
-    });
-    headerRow.innerHTML += `<th>Final Exam<br><small>${FINAL_EXAM_WEIGHT * 100}% (0-${FINAL_EXAM_MAX})</small></th><th onclick="sortByColumn('finalTotal')">Final Total<br><small>100%</small> ⬍</th><th>Status</th>`;
+    cls.components.forEach(comp => { headerRow.innerHTML += `<th>${comp.name}<br><small>(${comp.weight}%)</small></th>`; });
+    headerRow.innerHTML += `<th>Final Exam<br><small>(${FINAL_EXAM_WEIGHT}%)<br>0-${FINAL_EXAM_MAX}</small></th><th onclick="sortByColumn('finalTotal')">Final Total<br><small>100%</small> ⬍</th><th>Status</th>`;
     thead.appendChild(headerRow);
 }
 
@@ -748,6 +761,53 @@ function addStatusStyles() {
     document.head.appendChild(style);
 }
 
+function resetGrade8AToDefault() {
+    const defaultGrade8A = [
+        "Amen Addisu", "Arsemawit Mhireteab", "Arsonia Tadesse", "Aymen Abdulaziz",
+        "Biruk Abiy", "Bisrat Aydefer", "Christian Yohannes", "Diamond G|Egziahber",
+        "Eldaah Zacharias", "Eldana Tewodros", "Eman Yusuf", "Emanda Girma",
+        "Eyobed Wossen", "Eyosias Yirga", "Inam Miraj", "Makbel Tekle",
+        "Maraki Anteneh", "Marken Mesay", "Mathias Yohannes", "Nahom Abiy",
+        "Naomi Tekle", "Naomi Daniel", "Noah Mohammed", "Nobel Addisalem",
+        "Rajan Dirriba", "Rani Mayur", "Rediet Getu", "Reyan Abduljelil",
+        "Soliyana Alemayehu", "Tsinat Abiy", "Yafet Alexander", "Yohannes Tefera"
+    ];
+    
+    if (!confirm(`⚠️ This will reset Grade 8A in ALL terms to default ${defaultGrade8A.length} students.\n\nClick OK to continue.`)) return;
+    
+    const terms = ["term1", "term2", "term3"];
+    for (let term of terms) {
+        if (schoolData[term] && schoolData[term].grade8A) {
+            const currentStudents = schoolData[term].grade8A.students;
+            const originalStudents = currentStudents.filter(s => defaultGrade8A.includes(s.name));
+            schoolData[term].grade8A.students = originalStudents;
+            
+            const attendance = schoolData[term].grade8A.attendance;
+            for (let date in attendance) {
+                const newDayAtt = {};
+                defaultGrade8A.forEach(name => {
+                    if (attendance[date] && attendance[date][name]) {
+                        newDayAtt[name] = attendance[date][name];
+                    } else {
+                        newDayAtt[name] = { status: "absent", lastUpdated: new Date().toISOString() };
+                    }
+                });
+                attendance[date] = newDayAtt;
+            }
+        }
+    }
+    
+    persistToLocal();
+    if (currentClassId === "grade8A") {
+        renderMarklist();
+        renderAttendance();
+        updateAnalytics();
+        updateReportStudentSelect();
+    }
+    autoSyncToCloud();
+    alert(`✅ Grade 8A reset complete! Now has ${defaultGrade8A.length} students in all terms.`);
+}
+
 // ==================== INITIALIZATION ====================
 function initClassDropdown() {
     let select = document.getElementById("classSelector");
@@ -795,43 +855,19 @@ function startAutoCloudSync() {
         if (isLoggedIn && isCloudConnected && navigator.onLine) autoSyncToCloud();
     }, 3 * 60 * 1000);
 }
+
 function handleLogin() {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
     if ((username === "admin" && password === "admin123") || (username === "teacher" && password === "teacher")) {
         currentUser = username;
         isLoggedIn = true;
-        
-        // Load existing data or initialize all terms
-        if (!loadData()) {
-            console.log("No saved data found. Initializing all terms...");
-            initAllTerms();
-        } else {
-            console.log("Saved data loaded. Ensuring all data exists...");
-            ensureDataExists();
-        }
-        
-        // CRITICAL FIX: Force initialize current class if still missing
-        if (!schoolData[currentTerm] || !schoolData[currentTerm][currentClassId]) {
-            console.log(`Force initializing ${currentClassId} in ${currentTerm}...`);
-            initTermData(currentTerm, currentClassId);
-        }
-        
-        // Verify data exists for display
-        console.log(`Current class data exists:`, !!schoolData[currentTerm]?.[currentClassId]);
-        console.log(`Student count:`, schoolData[currentTerm]?.[currentClassId]?.students?.length || 0);
-        
-        persistToLocal();
-        
-        const loginPanel = document.getElementById("loginPanel");
+        if (!loadData()) initAllTerms();
+        else ensureDataExists();
+        document.getElementById("loginPanel").style.display = "none";
         const mainApp = document.getElementById("mainApp");
-        
-        if (loginPanel) loginPanel.style.display = "none";
-        if (mainApp) {
-            mainApp.style.display = "block";
-            mainApp.classList.add("visible");
-        }
-        
+        mainApp.style.display = "block";
+        mainApp.classList.add("visible");
         initClassDropdown();
         updateReportStudentSelect();
         renderMarklist();
@@ -840,16 +876,12 @@ function handleLogin() {
         updateClock();
         setInterval(updateClock, 1000);
         updateOnline();
-        
         if (username !== "admin") {
             const adminTab = document.querySelector('.tab-btn[data-tab="admin"]');
             if (adminTab) adminTab.style.display = "none";
         }
-        
-        const loginError = document.getElementById("loginError");
-        if (loginError) loginError.innerHTML = "";
+        document.getElementById("loginError").innerHTML = "";
         addStatusStyles();
-        
         initSupabase().then(() => {
             if (isCloudConnected) {
                 loadFromSupabase().then(() => {
@@ -861,12 +893,10 @@ function handleLogin() {
             }
         });
     } else {
-        const loginError = document.getElementById("loginError");
-        if (loginError) {
-            loginError.innerHTML = "Invalid credentials! Try again!";
-        }
+        document.getElementById("loginError").innerHTML = "Invalid credentials! Try again!";
     }
 }
+
 function handleLogout() {
     isLoggedIn = false;
     currentUser = null;
@@ -901,7 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginPanel").style.display = "flex";
     initTheme();
     initTabs();
-    console.log("TIS LabMaster Ready - Weighted grading system (Coursework 70% + Final Exam 30%)");
+    console.log("TIS LabMaster Ready - Final Total = Practical 1 (30%) + Practical 2 (40%) + Final Exam (30%)");
 });
 
 // Event Listeners
@@ -929,6 +959,7 @@ document.getElementById("resetCloudBtn")?.addEventListener("click", resetToDefau
 document.getElementById("syncToCloudBtn")?.addEventListener("click", manualCloudSync);
 document.getElementById("loadFromCloudBtn")?.addEventListener("click", manualLoadFromCloud);
 document.getElementById("uploadExcelBtn")?.addEventListener("click", uploadExcel);
+document.getElementById("resetGrade8ABtn")?.addEventListener("click", resetGrade8AToDefault);
 
 const attendanceDateInput = document.getElementById("attendanceDate");
 const loadAttendanceDateBtn = document.getElementById("loadAttendanceDateBtn");
