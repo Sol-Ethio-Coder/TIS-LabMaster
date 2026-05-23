@@ -1355,3 +1355,9 @@ body.light-mode .analytics-grid .stat-card p {
 .stat-card:nth-child(2) { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
 .stat-card:nth-child(3) { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
 .stat-card:nth-child(4) { background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%); }
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
