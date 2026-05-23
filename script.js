@@ -1,7 +1,11 @@
 // ==================== SUPABASE CLOUD STORAGE CONFIGURATION ====================
+// Default Supabase credentials (pre-configured)
+const DEFAULT_SUPABASE_URL = "https://bxtequbmmtzfkgshmtqe.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dGVxdWJtbXR6Zmtnc2htdHFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODQ3NTUsImV4cCI6MjA5NTA2MDc1NX0.85Wqg7kJqoAgZqlhNB6tbqnrtWGWgyB0a3AfCfD0GAI";
+
 let SUPABASE_CONFIG = {
-    url: localStorage.getItem("supabase_url") || "",
-    anonKey: localStorage.getItem("supabase_anon_key") || "",
+    url: localStorage.getItem("supabase_url") || DEFAULT_SUPABASE_URL,
+    anonKey: localStorage.getItem("supabase_anon_key") || DEFAULT_SUPABASE_ANON_KEY,
     table: "attendance_records"
 };
 
@@ -132,13 +136,7 @@ async function initSupabase() {
         return false;
     }
     
-    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
-        updateCloudStatusMessage("💡 Click 'Configure Cloud' to set up Supabase backup", "info");
-        isCloudConnected = false;
-        updateCloudUI(false);
-        return false;
-    }
-    
+    // Always try to connect with current config (has defaults)
     try {
         supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
         
@@ -168,10 +166,10 @@ async function initSupabase() {
 }
 
 function configureCloud() {
-    const url = prompt("Enter your Supabase Project URL:", SUPABASE_CONFIG.url || "");
+    const url = prompt("Enter your Supabase Project URL:", SUPABASE_CONFIG.url);
     if (!url) return;
     
-    const key = prompt("Enter your Supabase Anon Key:", SUPABASE_CONFIG.anonKey || "");
+    const key = prompt("Enter your Supabase Anon Key:", SUPABASE_CONFIG.anonKey);
     if (!key) return;
     
     SUPABASE_CONFIG.url = url;
@@ -189,17 +187,20 @@ function configureCloud() {
     });
 }
 
-function clearCloudConfig() {
-    if (confirm("⚠️ Clear cloud configuration?\n\nThis will remove your Supabase credentials.")) {
+function resetToDefaultCloud() {
+    if (confirm("⚠️ Reset to default cloud configuration?\n\nThis will use the default Supabase credentials.")) {
         localStorage.removeItem("supabase_url");
         localStorage.removeItem("supabase_anon_key");
-        SUPABASE_CONFIG.url = "";
-        SUPABASE_CONFIG.anonKey = "";
-        isCloudConnected = false;
-        supabaseClient = null;
-        updateCloudUI(false);
-        updateCloudStatusMessage("🔧 Cloud configuration cleared. Click 'Configure Cloud' to set up again.", "info");
-        alert("✅ Cloud configuration cleared!");
+        SUPABASE_CONFIG.url = DEFAULT_SUPABASE_URL;
+        SUPABASE_CONFIG.anonKey = DEFAULT_SUPABASE_ANON_KEY;
+        updateCloudStatusMessage("🔄 Resetting to default configuration...", "info");
+        initSupabase().then(() => {
+            if (isCloudConnected) {
+                alert("✅ Reset to default cloud configuration successfully!");
+            } else {
+                alert("❌ Failed to connect to default cloud. Please check your internet.");
+            }
+        });
     }
 }
 
@@ -242,8 +243,12 @@ async function autoSyncToCloud() {
 
 async function syncToSupabase() {
     if (!isCloudConnected || !supabaseClient) {
-        updateCloudStatusMessage("⚠️ Cloud not configured - click 'Configure Cloud' first", "warning");
-        return false;
+        updateCloudStatusMessage("⚠️ Cloud not connected - reconnecting...", "warning");
+        await initSupabase();
+        if (!isCloudConnected) {
+            updateCloudStatusMessage("⚠️ Cannot sync - cloud not available", "error");
+            return false;
+        }
     }
     
     updateCloudStatusMessage("☁️ Syncing to Supabase cloud...", "info");
@@ -337,8 +342,8 @@ function updateCloudUI(connected) {
             cloudStatus.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Cloud: Offline';
             cloudStatus.classList.remove("connected");
         }
-        if (cloudStorageStatus) cloudStorageStatus.innerHTML = 'Not configured - Click "Configure Cloud"';
-        if (cloudStatusMsg) cloudStatusMsg.innerHTML = '⚠️ Cloud not configured • Click "Configure Cloud" to enable auto-save';
+        if (cloudStorageStatus) cloudStorageStatus.innerHTML = '⚠️ Connection issue - Check internet';
+        if (cloudStatusMsg) cloudStatusMsg.innerHTML = '⚠️ Cloud connection issue • Data saved locally only';
     }
 }
 
@@ -352,7 +357,7 @@ function updateCloudStatusMessage(message, type) {
                 if (cloudStatusMsg && isCloudConnected) {
                     cloudStatusMsg.innerHTML = "☁️ Supabase cloud connected • Auto-saves on every change";
                 } else if (cloudStatusMsg && !isCloudConnected) {
-                    cloudStatusMsg.innerHTML = '⚠️ Cloud not configured • Click "Configure Cloud" to enable auto-save';
+                    cloudStatusMsg.innerHTML = '⚠️ Cloud connection issue • Data saved locally only';
                 }
             }, 3000);
         }
@@ -376,29 +381,23 @@ function showSyncIndicator(syncing = true) {
 }
 
 async function manualCloudSync() {
-    if (!isCloudConnected) {
-        if (confirm("⚠️ Supabase not configured!\n\nClick OK to configure now.")) {
-            configureCloud();
-        }
-        return;
-    }
-    
     updateCloudStatusMessage("☁️ Manual sync in progress...", "info");
     const result = await syncToSupabase();
     
     if (result) {
         alert("✅ Data synced to Supabase cloud successfully!");
     } else {
-        alert("❌ Sync failed. Please check your Supabase configuration and try again.");
+        alert("❌ Sync failed. Please check your internet connection.");
     }
 }
 
 async function manualLoadFromCloud() {
     if (!isCloudConnected || !supabaseClient) {
-        if (confirm("⚠️ Supabase not configured!\n\nClick OK to configure now.")) {
-            configureCloud();
+        await initSupabase();
+        if (!isCloudConnected) {
+            alert("❌ Cannot connect to cloud. Please check your internet connection.");
+            return;
         }
-        return;
     }
     
     updateCloudStatusMessage("☁️ Loading from cloud...", "info");
@@ -680,8 +679,7 @@ function generateReportCard(studentName) {
             let status = getStatusFromTotal(student.finalTotal);
             termsHtml += `<tr>
                 <td>${termName}</td>
-                <td>${student.finalTotal.toFixed(1)}%</td>
-                <td>${student.finalExamScore || "--"} / 30</td>
+                <td>${student.finalTotal.toFixed(1)}%</td>                <td>${student.finalExamScore || "--"} / 30</td>
                 <td class="${status.class}">${status.text}</td>
             </tr>`;
         }
@@ -902,6 +900,7 @@ function handleLogin() {
         // Add status styles
         addStatusStyles();
         
+        // Initialize Supabase (will use defaults)
         initSupabase().then(() => {
             if (isCloudConnected) {
                 loadFromSupabase().then(() => {
@@ -950,8 +949,8 @@ document.addEventListener("DOMContentLoaded", function() {
     initTheme();
     initTabs();
     
-    console.log("TIS LabMaster Ready! Login with admin / admin123");
-    console.log("☁️ Supabase cloud storage ready - click 'Configure Cloud' to set up");
+    console.log("TIS LabMaster Ready!");
+    console.log("☁️ Supabase cloud storage configured by default");
 });
 
 const loginBtn = document.getElementById("doLoginBtn");
@@ -1064,9 +1063,9 @@ if (configureCloudBtn) {
     configureCloudBtn.addEventListener("click", configureCloud);
 }
 
-const clearCloudBtn = document.getElementById("clearCloudBtn");
-if (clearCloudBtn) {
-    clearCloudBtn.addEventListener("click", clearCloudConfig);
+const resetCloudBtn = document.getElementById("resetCloudBtn");
+if (resetCloudBtn) {
+    resetCloudBtn.addEventListener("click", resetToDefaultCloud);
 }
 
 const syncToCloudBtn = document.getElementById("syncToCloudBtn");
