@@ -17,19 +17,98 @@ const VALID_CREDS = { admin: "admin123", teacher: "teacher" };
 let currentUser = null;
 let isLoggedIn = false;
 
-// ==================== CLASSES & WEIGHTS ====================
+// ==================== CLASSES & WEIGHTS (Based on your format) ====================
 const CLASSES = [
-    { id: "grade8A", display: "Grade Eight A", components: ["Practical 1", "Exam", "Exercise Book", "Participation", "Assign 1", "Assign 2", "Practical 2"] },
-    { id: "grade8B", display: "Grade Eight B", components: ["Practical 1", "Exam", "Exercise Book", "Participation", "Assign 1", "Assign 2", "Practical 2"] },
-    { id: "grade9A", display: "Grade Nine A", components: ["Project 1", "Project", "Quiz", "Exercise Book", "Participation", "Practical 2"] },
-    { id: "grade9B", display: "Grade Nine B", components: ["Project 1", "Project", "Quiz", "Exercise Book", "Participation", "Practice 2"] },
-    { id: "grade10A", display: "Grade Ten A", components: ["Practical 1", "Project", "Quiz", "Exercise Book", "Participation", "Assignment", "Practical 2"] },
-    { id: "grade11A", display: "Grade Eleven A", components: ["Practical 1", "Mid-Exam", "Assignment", "Exercise Book", "Participation", "Practical 2"] },
-    { id: "grade12A", display: "Grade Twelve A", components: ["Practical 1", "Mid-Exam", "Exercise Book", "Assignment", "Practical 2"] }
+    { 
+        id: "grade8A", 
+        display: "Grade Eight A", 
+        components: [
+            { name: "Practical 1", weight: 0.30 },
+            { name: "Exam", weight: 0.20 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Participation", weight: 0.05 },
+            { name: "Assign 1", weight: 0.05 },
+            { name: "Assign 2", weight: 0.05 },
+            { name: "Practical 2", weight: 0.40 }
+        ]
+    },
+    { 
+        id: "grade8B", 
+        display: "Grade Eight B", 
+        components: [
+            { name: "Practical 1", weight: 0.30 },
+            { name: "Exam", weight: 0.20 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Participation", weight: 0.05 },
+            { name: "Assign 1", weight: 0.05 },
+            { name: "Assign 2", weight: 0.05 },
+            { name: "Practical 2", weight: 0.40 }
+        ]
+    },
+    { 
+        id: "grade9A", 
+        display: "Grade Nine A", 
+        components: [
+            { name: "Project 1", weight: 0.30 },
+            { name: "Project", weight: 0.25 },
+            { name: "Quiz", weight: 0.05 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Participation", weight: 0.05 },
+            { name: "Practical 2", weight: 0.40 }
+        ]
+    },
+    { 
+        id: "grade9B", 
+        display: "Grade Nine B", 
+        components: [
+            { name: "Project 1", weight: 0.30 },
+            { name: "Project", weight: 0.25 },
+            { name: "Quiz", weight: 0.05 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Participation", weight: 0.05 },
+            { name: "Practice 2", weight: 0.40 }
+        ]
+    },
+    { 
+        id: "grade10A", 
+        display: "Grade Ten A", 
+        components: [
+            { name: "Practical 1", weight: 0.30 },
+            { name: "Project", weight: 0.15 },
+            { name: "Quiz", weight: 0.05 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Participation", weight: 0.05 },
+            { name: "Assignment", weight: 0.10 },
+            { name: "Practical 2", weight: 0.40 }
+        ]
+    },
+    { 
+        id: "grade11A", 
+        display: "Grade Eleven A", 
+        components: [
+            { name: "Practical 1", weight: 0.30 },
+            { name: "Mid-Exam", weight: 0.20 },
+            { name: "Assignment", weight: 0.10 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Participation", weight: 0.05 },
+            { name: "Practical 2", weight: 0.40 }
+        ]
+    },
+    { 
+        id: "grade12A", 
+        display: "Grade Twelve A", 
+        components: [
+            { name: "Practical 1", weight: 0.30 },
+            { name: "Mid-Exam", weight: 0.20 },
+            { name: "Exercise Book", weight: 0.05 },
+            { name: "Assignment", weight: 0.15 },
+            { name: "Practical 2", weight: 0.40 }
+        ]
+    }
 ];
 
-// Final Exam is separate - out of 30 points (will be added to total)
-const FINAL_EXAM_MAX = 30;
+const FINAL_EXAM_WEIGHT = 0.30; // 30%
+const FINAL_EXAM_MAX = 30; // out of 30 points
 
 const rawStudentData = {
     grade8A: ["Amen Addisu","Arsemawit Mhireteab","Arsonia Tadesse","Aymen Abdulaziz","Biruk Abiy","Bisrat Aydefer","Christian Yohannes","Diamond G|Egziahber","Eldaah Zacharias","Eldana Tewodros","Eman Yusuf","Emanda Girma","Eyobed Wossen","Eyosias Yirga","Inam Miraj","Makbel Tekle","Maraki Anteneh","Marken Mesay","Mathias Yohannes","Nahom Abiy","Naomi Tekle","Naomi Daniel","Noah Mohammed","Nobel Addisalem","Rajan Dirriba","Rani Mayur","Rediet Getu","Reyan Abduljelil","Soliyana Alemayehu","Tsinat Abiy","Yafet Alexander","Yohannes Tefera"],
@@ -48,52 +127,46 @@ let currentClassId = "grade8A";
 let currentSort = { column: "name", direction: "asc" };
 let searchTerm = "";
 
-// Attendance: current selected date (YYYY-MM-DD)
 let currentAttendanceDate = new Date().toISOString().split('T')[0];
 
-// Helper: get today's date string
 function getTodayDate() {
     return new Date().toISOString().split('T')[0];
 }
 
-// Helper: get status based on final total (SUM of all components + final exam)
-// Max possible: (number of components × 100) + FINAL_EXAM_MAX
-function getStatusFromTotal(finalTotal, classId) {
-    let cls = CLASSES.find(c => c.id === classId);
-    if (!cls) return { text: "📚 Needs Improvement", class: "status-fail" };
-    
-    const maxComponents = cls.components.length * 100;
-    const maxTotal = maxComponents + FINAL_EXAM_MAX;
-    const percentage = (finalTotal / maxTotal) * 100;
-    
-    if (percentage >= 90) return { text: "🏆 Excellent", class: "status-excellent" };
-    if (percentage >= 80) return { text: "✅ Very Good", class: "status-very-good" };
-    if (percentage >= 70) return { text: "📘 Good", class: "status-good" };
-    if (percentage >= 60) return { text: "📗 Satisfactory", class: "status-satisfactory" };
-    if (percentage >= 50) return { text: "⚠️ Pass", class: "status-pass" };
-    if (percentage >= 40) return { text: "📌 Below Average", class: "status-below" };
+function getStatusFromTotal(finalTotal) {
+    if (finalTotal >= 90) return { text: "🏆 Excellent", class: "status-excellent" };
+    if (finalTotal >= 80) return { text: "✅ Very Good", class: "status-very-good" };
+    if (finalTotal >= 70) return { text: "📘 Good", class: "status-good" };
+    if (finalTotal >= 60) return { text: "📗 Satisfactory", class: "status-satisfactory" };
+    if (finalTotal >= 50) return { text: "⚠️ Pass", class: "status-pass" };
+    if (finalTotal >= 40) return { text: "📌 Below Average", class: "status-below" };
     return { text: "❌ Needs Improvement", class: "status-fail" };
 }
 
-// Compute final total as SUM of all component scores + final exam score
-function computeFinalTotal(componentScores, finalExamScore) {
-    let total = 0;
+// Compute final total: Coursework (70%) + Final Exam (30%)
+function computeFinalTotal(componentScores, finalExamScore, classId) {
+    let cls = CLASSES.find(c => c.id === classId);
+    if (!cls) return 0;
     
-    // Sum all component scores
-    for (let comp in componentScores) {
-        let val = parseFloat(componentScores[comp]);
-        if (!isNaN(val) && val !== "") {
-            total += val;
+    // Calculate coursework contribution (sum of weighted components)
+    let courseworkTotal = 0;
+    for (let comp of cls.components) {
+        let score = parseFloat(componentScores[comp.name]);
+        if (!isNaN(score) && score !== "") {
+            courseworkTotal += (score / 100) * comp.weight * 70;
         }
     }
     
-    // Add final exam score (out of 30)
-    let examVal = parseFloat(finalExamScore);
-    if (!isNaN(examVal) && examVal !== "") {
-        total += examVal;
+    // Calculate exam contribution (out of 30 points, worth 30% of final grade)
+    let examScore = parseFloat(finalExamScore);
+    let examContribution = 0;
+    if (!isNaN(examScore) && examScore !== "") {
+        examContribution = (examScore / FINAL_EXAM_MAX) * 30;
     }
     
-    return total;
+    // Final total is out of 100
+    let finalTotal = courseworkTotal + examContribution;
+    return Math.min(100, Math.max(0, finalTotal));
 }
 
 // ==================== LOCAL STORAGE FUNCTIONS ====================
@@ -117,7 +190,7 @@ function initTermData(term, classId) {
     let students = studentNames.map((name, idx) => {
         let gender = (idx % 2 === 0 ? "F" : "M");
         let componentScores = {};
-        cls.components.forEach(comp => { componentScores[comp] = ""; });
+        cls.components.forEach(comp => { componentScores[comp.name] = ""; });
         return { name, gender, componentScores, finalExamScore: "", finalTotal: 0 };
     });
     let attendance = {};
@@ -161,7 +234,7 @@ function ensureDataExists() {
 
 // ==================== EXCEL UPLOAD - DISABLED ====================
 function uploadExcel() {
-    alert("Excel upload feature is currently disabled.\n\nPlease use the manual entry system:\n✓ Add students manually using 'Add Student' button\n✓ Enter scores directly in the marks table\n✓ Use backup/restore for data transfer");
+    alert("Excel upload feature is currently disabled.\n\nPlease use the manual entry system.");
     return;
 }
 
@@ -313,38 +386,50 @@ function renderMarklistHeader() {
     let weightsContainer = document.getElementById("weightsContainer");
     weightsContainer.innerHTML = "";
     
-    // Show component badges
+    // Show component badges with weights
+    let courseworkTotal = 0;
     cls.components.forEach(comp => {
+        let weightPercent = (comp.weight * 100).toFixed(0);
+        courseworkTotal += comp.weight * 70;
         let span = document.createElement("span");
         span.className = "weight-badge";
-        span.innerHTML = `${comp} <strong>(0-100)</strong>`;
+        span.innerHTML = `${comp.name} <strong>${weightPercent}%</strong>`;
         weightsContainer.appendChild(span);
     });
+    
+    // Add total coursework badge
+    let courseworkSpan = document.createElement("span");
+    courseworkSpan.className = "weight-badge";
+    courseworkSpan.style.background = "#2196f3";
+    courseworkSpan.style.color = "white";
+    courseworkSpan.innerHTML = `Total Coursework <strong>${courseworkTotal.toFixed(0)}%</strong>`;
+    weightsContainer.appendChild(courseworkSpan);
     
     // Add final exam badge
     let examSpan = document.createElement("span");
     examSpan.className = "weight-badge";
     examSpan.style.background = "#ff9800";
     examSpan.style.color = "white";
-    examSpan.innerHTML = `Final Exam <strong>0-${FINAL_EXAM_MAX}</strong>`;
+    examSpan.innerHTML = `Final Exam <strong>${FINAL_EXAM_WEIGHT * 100}%</strong> (out of ${FINAL_EXAM_MAX})`;
     weightsContainer.appendChild(examSpan);
     
-    // Add total points info
-    let maxComponents = cls.components.length * 100;
-    let maxTotal = maxComponents + FINAL_EXAM_MAX;
+    // Add total badge
     let totalSpan = document.createElement("span");
     totalSpan.className = "weight-badge";
     totalSpan.style.background = "#4caf50";
     totalSpan.style.color = "white";
-    totalSpan.innerHTML = `Max Total: ${maxTotal} pts`;
+    totalSpan.innerHTML = `Total <strong>100%</strong>`;
     weightsContainer.appendChild(totalSpan);
     
     let thead = document.getElementById("marksTableHead");
     thead.innerHTML = "";
     let headerRow = document.createElement("tr");
     headerRow.innerHTML = `<th>#</th><th onclick="sortByColumn('name')">Student Name ⬍</th><th>Gender</th>`;
-    cls.components.forEach(comp => { headerRow.innerHTML += `<th>${comp}<br><small>(0-100)</small></th>`; });
-    headerRow.innerHTML += `<th>Final Exam<br><small>(0-${FINAL_EXAM_MAX})</small></th><th onclick="sortByColumn('finalTotal')">Final Total<br><small>(SUM)</small> ⬍</th><th>Status</th>`;
+    cls.components.forEach(comp => { 
+        let weightPercent = (comp.weight * 100).toFixed(0);
+        headerRow.innerHTML += `<th>${comp.name}<br><small>${weightPercent}%</small></th>`; 
+    });
+    headerRow.innerHTML += `<th>Final Exam<br><small>${FINAL_EXAM_WEIGHT * 100}% (0-${FINAL_EXAM_MAX})</small></th><th onclick="sortByColumn('finalTotal')">Final Total<br><small>100%</small> ⬍</th><th>Status</th>`;
     thead.appendChild(headerRow);
 }
 
@@ -378,20 +463,19 @@ function renderMarklist() {
         row.insertCell(1).innerHTML = student.name;
         row.insertCell(2).innerHTML = student.gender;
         
-        // Component scores (each out of 100)
         cls.components.forEach(comp => {
             let cell = row.insertCell();
             let inp = document.createElement("input");
             inp.type = "number";
-            inp.value = student.componentScores[comp] || "";
+            inp.value = student.componentScores[comp.name] || "";
             inp.placeholder = "0-100";
             inp.min = 0;
             inp.max = 100;
             inp.classList.add("score-input");
             inp.onchange = async (e) => {
                 let val = e.target.value === "" ? "" : Math.min(100, Math.max(0, parseFloat(e.target.value)||0));
-                student.componentScores[comp] = val;
-                student.finalTotal = computeFinalTotal(student.componentScores, student.finalExamScore);
+                student.componentScores[comp.name] = val;
+                student.finalTotal = computeFinalTotal(student.componentScores, student.finalExamScore, currentClassId);
                 persistToLocal();
                 renderMarklist();
                 updateAnalytics();
@@ -400,7 +484,6 @@ function renderMarklist() {
             cell.appendChild(inp);
         });
         
-        // Final Exam (out of FINAL_EXAM_MAX)
         let examCell = row.insertCell();
         let examInput = document.createElement("input");
         examInput.type = "number";
@@ -412,7 +495,7 @@ function renderMarklist() {
         examInput.onchange = async (e) => {
             let examVal = e.target.value === "" ? "" : Math.min(FINAL_EXAM_MAX, Math.max(0, parseFloat(e.target.value)||0));
             student.finalExamScore = examVal;
-            student.finalTotal = computeFinalTotal(student.componentScores, student.finalExamScore);
+            student.finalTotal = computeFinalTotal(student.componentScores, student.finalExamScore, currentClassId);
             persistToLocal();
             renderMarklist();
             updateAnalytics();
@@ -420,20 +503,17 @@ function renderMarklist() {
         };
         examCell.appendChild(examInput);
         
-        // Final Total (SUM of all scores)
         let totalCell = row.insertCell();
-        let maxTotal = (cls.components.length * 100) + FINAL_EXAM_MAX;
-        totalCell.innerHTML = `${student.finalTotal} / ${maxTotal}`;
+        totalCell.innerHTML = student.finalTotal.toFixed(1) + "%";
         
-        // Status based on percentage of max total
-        let status = getStatusFromTotal(student.finalTotal, currentClassId);
+        let status = getStatusFromTotal(student.finalTotal);
         let statusCell = row.insertCell();
         statusCell.innerHTML = status.text;
         statusCell.className = status.class;
     });
 }
 
-// ==================== ATTENDANCE (DAY-BY-DAY) ====================
+// ==================== ATTENDANCE FUNCTIONS ====================
 function renderAttendance() {
     if (!isLoggedIn) return;
     let data = schoolData[currentTerm][currentClassId];
@@ -524,23 +604,19 @@ function updateAnalytics() {
     if (!isLoggedIn) return;
     let data = schoolData[currentTerm][currentClassId];
     if (!data) return;
-    let cls = CLASSES.find(c => c.id === currentClassId);
-    let maxTotal = (cls.components.length * 100) + FINAL_EXAM_MAX;
     
     let totals = data.students.map(s => s.finalTotal).filter(v => !isNaN(v) && v > 0);
-    let percentages = totals.map(t => (t / maxTotal) * 100);
-    
-    let avg = percentages.length ? (percentages.reduce((a,b)=>a+b,0)/percentages.length).toFixed(1) : 0;
-    let sorted = [...percentages].sort((a,b)=>a-b);
+    let avg = totals.length ? (totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1) : 0;
+    let sorted = [...totals].sort((a,b)=>a-b);
     let median = sorted.length ? sorted[Math.floor(sorted.length/2)].toFixed(1) : 0;
-    let highest = percentages.length ? Math.max(...percentages).toFixed(1) : 0;
-    let lowest = percentages.length ? Math.min(...percentages).toFixed(1) : 0;
-    let passCount = percentages.filter(s=>s>=60).length;
-    let passRate = percentages.length ? ((passCount/percentages.length)*100).toFixed(1) : 0;
-    let excellentCount = percentages.filter(s=>s>=80).length;
+    let highest = totals.length ? Math.max(...totals).toFixed(1) : 0;
+    let lowest = totals.length ? Math.min(...totals).toFixed(1) : 0;
+    let passCount = totals.filter(s=>s>=60).length;
+    let passRate = totals.length ? ((passCount/totals.length)*100).toFixed(1) : 0;
+    let excellentCount = totals.filter(s=>s>=80).length;
     let presentCount = data.attendance[currentAttendanceDate] ? Object.values(data.attendance[currentAttendanceDate]).filter(a=>a.status==="present").length : 0;
     let attendanceRate = data.students.length ? ((presentCount/data.students.length)*100).toFixed(1) : 0;
-    let distribution = `${percentages.filter(s=>s>=80).length} A, ${percentages.filter(s=>s>=60&&s<80).length} B, ${percentages.filter(s=>s>=50&&s<60).length} C, ${percentages.filter(s=>s<50).length} D`;
+    let distribution = `${totals.filter(s=>s>=80).length} A, ${totals.filter(s=>s>=60&&s<80).length} B, ${totals.filter(s=>s>=50&&s<60).length} C, ${totals.filter(s=>s<50).length} D`;
     
     document.getElementById("avgScore").innerHTML = avg+"%";
     document.getElementById("medianScore").innerHTML = median+"%";
@@ -559,7 +635,7 @@ function addStudent() {
     let data = schoolData[currentTerm][currentClassId];
     let cls = CLASSES.find(c=>c.id===currentClassId);
     let componentScores = {};
-    cls.components.forEach(c => componentScores[c] = "");
+    cls.components.forEach(c => componentScores[c.name] = "");
     data.students.push({name,gender,componentScores,finalExamScore:"",finalTotal:0});
     data.attendance[currentAttendanceDate] = data.attendance[currentAttendanceDate] || {};
     data.attendance[currentAttendanceDate][name] = { status: "absent", lastUpdated: new Date().toISOString() };
@@ -569,40 +645,35 @@ function addStudent() {
 function generateReportCard(studentName) {
     let modal = document.getElementById("reportModal");
     let content = document.getElementById("reportContent");
-    let cls = CLASSES.find(c => c.id === currentClassId);
-    let maxTotal = (cls.components.length * 100) + FINAL_EXAM_MAX;
     let termsHtml = "";
-    
     for (let term of ["term1","term2","term3"]) {
         let termName = term==="term1"?"First Term":term==="term2"?"Second Term":"Third Term";
         let data = schoolData[term][currentClassId];
         let student = data?.students.find(s=>s.name===studentName);
         if(student){
-            let percentage = (student.finalTotal / maxTotal) * 100;
-            let status = getStatusFromTotal(student.finalTotal, currentClassId);
+            let status = getStatusFromTotal(student.finalTotal);
             termsHtml += `<tr>
                 <td>${termName}</td>
-                <td>${student.finalTotal} / ${maxTotal}</td>
-                <td>${percentage.toFixed(1)}%</td>
+                <td>${student.finalTotal.toFixed(1)}%</td>
                 <td>${student.finalExamScore || "--"} / ${FINAL_EXAM_MAX}</td>
                 <td class="${status.class}">${status.text}</td>
             </tr>`;
         }
     }
-    content.innerHTML = `<div class="report-card-print"><div class="header"><h2>TIS LabMaster</h2><h3>Student Report Card</h3><p>${studentName}</p><p>${new Date().toLocaleString()}</p></div><table border="1"><thead><tr style="background:#667eea;color:white"><th>Term</th><th>Total Score</th><th>Percentage</th><th>Final Exam</th><th>Status</th></tr></thead><tbody>${termsHtml}</tbody></table><button class="print-btn" onclick="window.print()">🖨️ Print</button><button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">Close</button></div>`;
+    content.innerHTML = `<div class="report-card-print"><div class="header"><h2>TIS LabMaster</h2><h3>Student Report Card</h3><p>${studentName}</p><p>${new Date().toLocaleString()}</p></div><table border="1"><thead><tr style="background:#667eea;color:white"><th>Term</th><th>Final Total (%)</th><th>Final Exam</th><th>Status</th></tr></thead><tbody>${termsHtml}</tbody></tr><button class="print-btn" onclick="window.print()">🖨️ Print</button><button class="close-modal" onclick="document.getElementById('reportModal').style.display='none'">Close</button></div>`;
     modal.style.display = "flex";
 }
 
 function exportAllCSV() {
-    let rows = [["Term","Class","Student Name","Gender","Component Scores","Final Exam","Total Score","Status"]];
+    let rows = [["Term","Class","Student Name","Gender","Component Scores","Final Exam","Final Total (%)","Status"]];
     for (let term of ["term1","term2","term3"]) {
         for (let cls of CLASSES) {
             let data = schoolData[term][cls.id];
             if (data && data.students) {
                 data.students.forEach(s => {
                     let components = Object.values(s.componentScores).join("|");
-                    let status = getStatusFromTotal(s.finalTotal, cls.id);
-                    rows.push([term, cls.display, s.name, s.gender, components, s.finalExamScore || "", s.finalTotal, status.text]);
+                    let status = getStatusFromTotal(s.finalTotal);
+                    rows.push([term, cls.display, s.name, s.gender, components, s.finalExamScore || "", s.finalTotal.toFixed(1)+"%", status.text]);
                 });
             }
         }
@@ -676,55 +747,7 @@ function addStatusStyles() {
     document.head.appendChild(style);
 }
 
-// ==================== RESET GRADE 8A TO DEFAULT ====================
-function resetGrade8AToDefault() {
-    const defaultGrade8A = [
-        "Amen Addisu", "Arsemawit Mhireteab", "Arsonia Tadesse", "Aymen Abdulaziz",
-        "Biruk Abiy", "Bisrat Aydefer", "Christian Yohannes", "Diamond G|Egziahber",
-        "Eldaah Zacharias", "Eldana Tewodros", "Eman Yusuf", "Emanda Girma",
-        "Eyobed Wossen", "Eyosias Yirga", "Inam Miraj", "Makbel Tekle",
-        "Maraki Anteneh", "Marken Mesay", "Mathias Yohannes", "Nahom Abiy",
-        "Naomi Tekle", "Naomi Daniel", "Noah Mohammed", "Nobel Addisalem",
-        "Rajan Dirriba", "Rani Mayur", "Rediet Getu", "Reyan Abduljelil",
-        "Soliyana Alemayehu", "Tsinat Abiy", "Yafet Alexander", "Yohannes Tefera"
-    ];
-    
-    if (!confirm(`⚠️ This will reset Grade 8A in ALL terms to default ${defaultGrade8A.length} students.\n\nClick OK to continue.`)) return;
-    
-    const terms = ["term1", "term2", "term3"];
-    for (let term of terms) {
-        if (schoolData[term] && schoolData[term].grade8A) {
-            const currentStudents = schoolData[term].grade8A.students;
-            const originalStudents = currentStudents.filter(s => defaultGrade8A.includes(s.name));
-            schoolData[term].grade8A.students = originalStudents;
-            
-            const attendance = schoolData[term].grade8A.attendance;
-            for (let date in attendance) {
-                const newDayAtt = {};
-                defaultGrade8A.forEach(name => {
-                    if (attendance[date] && attendance[date][name]) {
-                        newDayAtt[name] = attendance[date][name];
-                    } else {
-                        newDayAtt[name] = { status: "absent", lastUpdated: new Date().toISOString() };
-                    }
-                });
-                attendance[date] = newDayAtt;
-            }
-        }
-    }
-    
-    persistToLocal();
-    if (currentClassId === "grade8A") {
-        renderMarklist();
-        renderAttendance();
-        updateAnalytics();
-        updateReportStudentSelect();
-    }
-    autoSyncToCloud();
-    alert(`✅ Grade 8A reset complete! Now has ${defaultGrade8A.length} students in all terms.`);
-}
-
-// ==================== INITIALIZATION & EVENT LISTENERS ====================
+// ==================== INITIALIZATION ====================
 function initClassDropdown() {
     let select = document.getElementById("classSelector");
     if (!select) return;
@@ -847,10 +870,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginPanel").style.display = "flex";
     initTheme();
     initTabs();
-    console.log("TIS LabMaster Ready - Day-by-day attendance enabled");
+    console.log("TIS LabMaster Ready - Weighted grading system enabled");
 });
 
-// Attach event listeners
+// Event Listeners
 document.getElementById("doLoginBtn")?.addEventListener("click", handleLogin);
 document.getElementById("logoutBtn")?.addEventListener("click", handleLogout);
 document.getElementById("loginPassword")?.addEventListener("keypress", e => { if(e.key==="Enter") handleLogin(); });
@@ -875,9 +898,7 @@ document.getElementById("resetCloudBtn")?.addEventListener("click", resetToDefau
 document.getElementById("syncToCloudBtn")?.addEventListener("click", manualCloudSync);
 document.getElementById("loadFromCloudBtn")?.addEventListener("click", manualLoadFromCloud);
 document.getElementById("uploadExcelBtn")?.addEventListener("click", uploadExcel);
-document.getElementById("resetGrade8ABtn")?.addEventListener("click", resetGrade8AToDefault);
 
-// Attendance date picker events
 const attendanceDateInput = document.getElementById("attendanceDate");
 const loadAttendanceDateBtn = document.getElementById("loadAttendanceDateBtn");
 if (attendanceDateInput && loadAttendanceDateBtn) {
