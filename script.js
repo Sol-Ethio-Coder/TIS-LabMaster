@@ -795,19 +795,43 @@ function startAutoCloudSync() {
         if (isLoggedIn && isCloudConnected && navigator.onLine) autoSyncToCloud();
     }, 3 * 60 * 1000);
 }
-
 function handleLogin() {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
     if ((username === "admin" && password === "admin123") || (username === "teacher" && password === "teacher")) {
         currentUser = username;
         isLoggedIn = true;
-        if (!loadData()) initAllTerms();
-        else ensureDataExists();
-        document.getElementById("loginPanel").style.display = "none";
+        
+        // Load existing data or initialize all terms
+        if (!loadData()) {
+            console.log("No saved data found. Initializing all terms...");
+            initAllTerms();
+        } else {
+            console.log("Saved data loaded. Ensuring all data exists...");
+            ensureDataExists();
+        }
+        
+        // CRITICAL FIX: Force initialize current class if still missing
+        if (!schoolData[currentTerm] || !schoolData[currentTerm][currentClassId]) {
+            console.log(`Force initializing ${currentClassId} in ${currentTerm}...`);
+            initTermData(currentTerm, currentClassId);
+        }
+        
+        // Verify data exists for display
+        console.log(`Current class data exists:`, !!schoolData[currentTerm]?.[currentClassId]);
+        console.log(`Student count:`, schoolData[currentTerm]?.[currentClassId]?.students?.length || 0);
+        
+        persistToLocal();
+        
+        const loginPanel = document.getElementById("loginPanel");
         const mainApp = document.getElementById("mainApp");
-        mainApp.style.display = "block";
-        mainApp.classList.add("visible");
+        
+        if (loginPanel) loginPanel.style.display = "none";
+        if (mainApp) {
+            mainApp.style.display = "block";
+            mainApp.classList.add("visible");
+        }
+        
         initClassDropdown();
         updateReportStudentSelect();
         renderMarklist();
@@ -816,12 +840,16 @@ function handleLogin() {
         updateClock();
         setInterval(updateClock, 1000);
         updateOnline();
+        
         if (username !== "admin") {
             const adminTab = document.querySelector('.tab-btn[data-tab="admin"]');
             if (adminTab) adminTab.style.display = "none";
         }
-        document.getElementById("loginError").innerHTML = "";
+        
+        const loginError = document.getElementById("loginError");
+        if (loginError) loginError.innerHTML = "";
         addStatusStyles();
+        
         initSupabase().then(() => {
             if (isCloudConnected) {
                 loadFromSupabase().then(() => {
@@ -833,10 +861,12 @@ function handleLogin() {
             }
         });
     } else {
-        document.getElementById("loginError").innerHTML = "Invalid credentials! Try again!";
+        const loginError = document.getElementById("loginError");
+        if (loginError) {
+            loginError.innerHTML = "Invalid credentials! Try again!";
+        }
     }
 }
-
 function handleLogout() {
     isLoggedIn = false;
     currentUser = null;
