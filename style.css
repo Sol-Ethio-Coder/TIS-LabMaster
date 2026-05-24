@@ -1484,3 +1484,328 @@ body.light-mode .analytics-grid .stat-card p {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
+/* Remove spinner arrows from number inputs */
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.score-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Placeholder styling */
+.score-input::placeholder {
+    color: #94a3b8;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+body.light-mode .score-input::placeholder {
+    color: #94a3b8;
+    opacity: 0.8;
+}
+/* ==================== LAB ATTENDANCE TRACKER - FIXED FOR BOTH THEMES ==================== */
+
+/* Attendance Header */
+.attendance-header h3 {
+    color: var(--text-primary) !important;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+/* Date Picker Area */
+.date-picker-area {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin: 15px 0;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    background: var(--bg-secondary);
+    border-radius: 60px;
+    border: 1px solid var(--border-color);
+}
+
+.date-picker-area .date-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-primary);
+    padding: 6px 15px;
+    border-radius: 40px;
+}
+
+.date-picker-area .date-label i {
+    color: var(--accent-info);
+    font-size: 1rem;
+}
+
+/* Date Input */
+.date-picker-area input[type="date"] {
+    background: var(--input-bg);
+    border: 2px solid var(--input-border);
+    color: var(--text-primary) !important;
+    padding: 8px 16px;
+    border-radius: 40px;
+    font-family: 'Inter', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.date-picker-area input[type="date"]:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+    transform: translateY(-2px);
+}
+
+.date-picker-area input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+}
+
+body.light-mode .date-picker-area input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.3);
+}
+
+/* Load Button */
+.date-picker-area .icon-btn {
+    background: var(--accent-success);
+    color: white !important;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.date-picker-area .icon-btn:hover {
+    background: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+/* Info Text */
+.date-picker-area .info-text {
+    font-size: 12px;
+    color: var(--text-secondary) !important;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.date-picker-area .info-text i {
+    color: var(--accent-info);
+}
+
+/* Attendance Stats */
+.attendance-stats {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.stat-chip {
+    background: var(--stat-bg);
+    padding: 10px 18px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: all 0.3s;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary) !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-chip i {
+    font-size: 1rem;
+}
+
+.stat-chip:hover {
+    transform: translateY(-2px);
+    background: rgba(139, 92, 246, 0.2);
+    border-color: var(--accent-secondary);
+}
+
+.stat-chip span {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--accent-primary) !important;
+}
+
+body.light-mode .stat-chip span {
+    color: var(--accent-primary) !important;
+}
+
+.present-chip {
+    border-left: 4px solid var(--accent-success);
+}
+
+.present-chip i {
+    color: var(--accent-success);
+}
+
+.absent-chip {
+    border-left: 4px solid var(--accent-danger);
+}
+
+.absent-chip i {
+    color: var(--accent-danger);
+}
+
+/* Attendance Table */
+#attendanceTable {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text-primary) !important;
+    font-size: 0.8rem;
+}
+
+#attendanceTable th,
+#attendanceTable td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary) !important;
+}
+
+#attendanceTable th {
+    background: rgba(0, 0, 0, 0.5);
+    position: sticky;
+    top: 0;
+    font-weight: 700;
+    color: var(--accent-primary) !important;
+}
+
+body.light-mode #attendanceTable th {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--accent-primary) !important;
+}
+
+#attendanceTable tr:hover {
+    background: var(--card-hover);
+}
+
+/* Attendance Badges */
+.attendance-badge {
+    padding: 5px 12px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    display: inline-block;
+    transition: all 0.3s;
+}
+
+.attendance-badge.present {
+    background: var(--accent-success);
+    color: white !important;
+}
+
+.attendance-badge.absent {
+    background: var(--accent-danger);
+    color: white !important;
+}
+
+.attendance-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Toggle Button in Table */
+#attendanceTable .icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 40px;
+    color: var(--text-primary) !important;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+#attendanceTable .icon-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: translateY(-2px);
+    border-color: var(--accent-secondary);
+    color: var(--text-primary) !important;
+}
+
+/* Attendance Actions Buttons */
+.attendance-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.attendance-actions .fab-add {
+    flex: 1;
+    background: linear-gradient(95deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    padding: 12px 20px;
+    border-radius: 60px;
+    font-weight: 700;
+    color: white !important;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.attendance-actions .fab-add.secondary {
+    background: linear-gradient(95deg, var(--accent-success), #059669);
+}
+
+.attendance-actions .fab-add:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.05);
+    gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .attendance-stats {
+        justify-content: space-between;
+        gap: 8px;
+    }
+    
+    .stat-chip {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+    }
+    
+    .stat-chip span {
+        font-size: 0.9rem;
+    }
+    
+    .date-picker-area {
+        flex-direction: column;
+        align-items: stretch;
+        border-radius: 24px;
+    }
+    
+    .date-picker-area input[type="date"] {
+        width: 100%;
+    }
+    
+    .attendance-actions {
+        flex-direction: column;
+    }
+    
+    #attendanceTable th,
+    #attendanceTable td {
+        padding: 8px 4px;
+        font-size: 0.7rem;
+    }
+}
+
+
